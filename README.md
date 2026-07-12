@@ -1,14 +1,16 @@
+![AI Toolshed Banner](assets/ai-toolshed-best-banner.gif)
+
 # AI Toolshed
 
 Practical, reusable tools for working better with AI.
 
-This monorepo collects skills, plugins, and standalone tools that make collaboration with AI systems more rigorous, useful, and repeatable. Each project is designed to solve a real workflow problem rather than serve as a demo.
+This monorepo collects skills, plugins, and standalone tools that make collaboration with AI systems more rigorous, useful, and repeatable. Each project is designed to solve a real workflow problem[...]
 
 ## What's inside
 
 | Type | Project | Purpose |
 | --- | --- | --- |
-| Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, benchmark it against the current market, and produce an implementation-ready teardown. |
+| Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, benchmark it against the current market, and produce an implementation[...]
 
 The repository is organized by artifact type:
 
