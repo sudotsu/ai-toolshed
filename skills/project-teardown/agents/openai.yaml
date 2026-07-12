@@ -1,0 +1,12 @@
+interface:
+  display_name: Project Teardown
+  short_description: Comprehensive software product teardown
+  default_prompt: Use $project-teardown to thoroughly evaluate this project and produce
+    an implementation-ready teardown.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
