@@ -4,40 +4,64 @@
 
 Practical, reusable tools for working better with AI.
 
-This monorepo collects skills, plugins, and standalone tools that make collaboration with AI systems more rigorous, useful, and repeatable. Each project is designed to solve a real workflow problem[...]
+This monorepo collects skills, plugins, and standalone tools that make collaboration with AI systems more rigorous, useful, and repeatable. Each project is designed around a real workflow, explicit evidence, and verifiable outputs rather than a generic prompt.
 
 ## What's inside
 
 | Type | Project | Purpose |
 | --- | --- | --- |
-| Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, benchmark it against the current market, and produce an implementation[...]
+| Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, judge its product and market position, and produce a severity-ordered, implementation-ready teardown. |
+| Skill | [project-revision](skills/project-revision/) | Revalidate an approved project teardown, resolve owner decisions, implement findings in dependency order, and converge the result into an auditable readiness handoff. |
+| Skill | [seo-teardown](skills/seo-teardown/) | Investigate technical SEO, content, authority, local and AI-mediated discovery, measurement, and qualified-conversion opportunity without changing the site. |
+| Skill | [seo-revision](skills/seo-revision/) | Revalidate and implement approved SEO findings, respect repository and external-action boundaries, verify search eligibility, and produce a durable revision and experiment record. |
+
+The skills form two complementary workflows:
+
+```text
+project-teardown  -> project-revision
+seo-teardown      -> seo-revision
+```
+
+The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, and verify the resulting state without claiming unproven outcomes.
 
 The repository is organized by artifact type:
 
 ```text
 ai-toolshed/
-├── skills/      # Reusable instruction and resource packages for AI agents
-├── plugins/     # Bundles that may combine skills, integrations, and commands
-└── tools/       # Standalone utilities and supporting software
+├── assets/
+└── skills/
+    ├── project-teardown/
+    ├── project-revision/
+    ├── seo-teardown/
+    └── seo-revision/
 ```
 
-Empty categories are added when the first real project for that category is ready.
+Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
 
-## Install a skill
+## Install for Codex CLI or the IDE extension
 
-To install `project-teardown` for Codex, copy its complete directory into your Codex skills directory:
+Codex discovers user-level skills under `$HOME/.agents/skills`. From WSL or another POSIX shell, copy whichever complete skill directories you want:
 
 ```bash
-cp -R skills/project-teardown "${CODEX_HOME:-$HOME/.codex}/skills/"
+mkdir -p "$HOME/.agents/skills"
+cp -R skills/project-teardown "$HOME/.agents/skills/"
+cp -R skills/project-revision "$HOME/.agents/skills/"
+cp -R skills/seo-teardown "$HOME/.agents/skills/"
+cp -R skills/seo-revision "$HOME/.agents/skills/"
 ```
 
-Restart Codex after installation so it discovers the skill. Then invoke it by name:
+Codex normally detects skill changes automatically. List available skills with `/skills`, or invoke one explicitly with `$`:
 
 ```text
-Use $project-teardown to thoroughly evaluate this project.
+Use $project-teardown to comprehensively evaluate this project.
+Use $project-revision to implement the approved teardown findings.
+Use $seo-teardown to investigate this site's organic-search opportunity.
+Use $seo-revision to implement the approved SEO teardown findings.
 ```
 
-Read each project's `SKILL.md` before adapting it to another agent or platform. Agent capabilities and packaging conventions differ.
+In ChatGPT Work, invoke an installed skill with `@` instead. Cloning this repository does not automatically add its skills to your ChatGPT account.
+
+Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
 
 ## Contributing
 

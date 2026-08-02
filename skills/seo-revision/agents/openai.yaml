@@ -1,0 +1,15 @@
+interface:
+  display_name: SEO Revision
+  short_description: Implement and verify validated SEO teardown work
+  default_prompt: Use $seo-revision to revalidate this SEO teardown, resolve owner
+    decisions and authority, implement approved work, converge the changes, and produce
+    a verified handoff.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
