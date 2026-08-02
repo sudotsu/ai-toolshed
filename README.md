@@ -81,6 +81,47 @@ This installation is for Codex only. Cloning or copying this repository does not
 
 Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
 
+## What's coming next
+
+The next additions are being selected from working skill packages already used across Claude Code, Codex, and Gemini environments. This is a roadmap, not a promise to publish local folders unchanged: every candidate must be generalized, hardened, documented, and tested to the same standard as the teardown and revision skills before it lands here.
+
+The strongest pipeline currently looks like this:
+
+```text
+lead-architect
+├── backend-expert
+├── frontend-expert
+├── devops-sre
+└── qa-testing
+
+digital-product-launcher
+skill-portability
+```
+
+| Planned skill | What it will add | Why it made the cut | Required before publication |
+| --- | --- | --- | --- |
+| `lead-architect` | Spec-driven decomposition, specialist coordination, handoff contracts, and separate compliance and quality reviews for complex builds. | It already has an explicit operating law, staged workflow, failure escalation, model-selection guidance, and adversarial evals. | Remove runtime-specific assumptions, define durable handoff schemas, and add validator-backed completion gates. |
+| `backend-expert` | Secure API and data-system design with transaction, idempotency, concurrency, authorization, and query-performance checks. | It already combines a concrete workflow with architecture and security references plus pressure, refactoring, and adversarial evals. | Generalize beyond one stack, replace absolute rules with evidence-aware policy, and validate generated implementation specs. |
+| `frontend-expert` | Accessible, resilient, performance-aware frontend planning and implementation with explicit server/client and async-state boundaries. | It already carries accessibility, performance, and resilience references plus three behavior-focused evals. | Make framework rules version-aware, support non-React projects, and add measurable accessibility and performance verification. |
+| `devops-sre` | Environment fingerprinting, change impact analysis, secret-safe infrastructure work, dry runs, rollback planning, and reliability verification. | It already includes a host fingerprint tool, a security/reliability contract, and adversarial infrastructure evals. | Make fingerprinting cross-platform, formalize destructive-action approvals, and test rollback and secret-handling guarantees. |
+| `qa-testing` | Behavior-first test strategy, deterministic async testing, integration boundaries, adversarial coverage review, and regression handoffs. | It already has a testing-strategy reference and evals for flaky, over-mocked, and superficially complete suites. | Relax dogmatic test rules where the evidence calls for it, define bounded test budgets, and validate the resulting coverage record. |
+| `digital-product-launcher` | Live-market research, monetization-model selection, pricing, payment constraints, launch sequencing, landing-page copy, and email funnels. | It already routes through seven substantial reference guides instead of producing generic launch advice. | Remove project- and vertical-specific assumptions, add evidence citation and freshness rules, and separate planning from authorized external actions. |
+| `skill-portability` | Package one workflow for Claude Code, Codex, and Gemini while preserving metadata, tool permissions, MCP configuration, references, and install behavior. | Cross-runtime skill drift is a real recurring problem, and the local tooling demonstrates a viable analyze-transform-validate workflow. | Use a provenance-safe implementation, document each runtime's supported contract, and add round-trip fixtures that detect lossy conversion. |
+
+### Publication gate
+
+A roadmap candidate ships only when it is:
+
+- reusable outside the project that created it;
+- explicit about scope, authority, destructive actions, and external side effects;
+- organized around a concrete workflow and durable output contract;
+- bundled with the references, scripts, templates, or assets required to work independently;
+- covered by realistic evals or regression tests, with validators where deterministic artifacts are part of the contract;
+- portable across the hosts and runtimes it claims to support; and
+- clear on provenance, licensing, current-documentation requirements, and known limitations.
+
+Prompt-only personas, project-private operating instructions, copied vendor bundles, and unverified experiments do not enter the catalog just because they happen to live in a skills directory.
+
 ## Contributing
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the repository conventions.
