@@ -88,16 +88,22 @@ Read [report-contract.md](references/report-contract.md) before writing delivera
 - Deduplicate symptoms that share a root cause without hiding their distinct user impacts.
 - Separate confirmed defects, design shortcomings, strategic recommendations, opportunities, and investigations.
 - Assign severity from impact and likelihood; do not inflate severity because a fix is easy or visually obvious.
+- Reserve critical severity for confirmed or high-confidence conditions meeting the report contract's catastrophic-impact threshold. An architectural exposure, missing control, or plausible exploit path without demonstrated catastrophic impact is normally high, not critical.
 - Build a dependency graph among findings. Order implementation by prerequisites, risk reduction, and then severity—not severity alone.
+- Define `dependencies` strictly as prerequisite finding IDs that must be completed or decided before the current finding. Put reverse relationships in `dependents`. Never use reciprocal dependencies or phase membership as a dependency.
+- Require an acyclic dependency graph and order the implementation ledger so every dependency appears before its dependent.
 - Surface decisions and mutually exclusive paths explicitly. Do not hand the implementation skill contradictory instructions.
 - Preserve low-severity findings. Comprehensive means nothing actionable silently disappears.
 - Include positive findings and passed checks so future work does not regress strengths or repeat completed investigation.
 - Reconcile every actionable statement in narrative sections with exactly one finding ID. If an observation is intentionally non-actionable, mark it as a passed check, limitation, explicit deferral, or contextual note in the review coverage file.
+- Do not use “no material finding,” “later hardening,” or a coverage limitation to hide an actionable low-severity improvement or investigation. Register it or explicitly justify why no action is warranted.
 - Use the controlled finding values and exact field labels in the report contract. Write `None` or `Not applicable — <reason>` instead of omitting a required field.
 
 ## Produce the handoff
 
 Create a `project-teardown/` folder at the project root unless the user specifies another location. If it already exists, ask before replacing it or create a clearly dated sibling folder. Use the exact structure and field definitions in [report-contract.md](references/report-contract.md).
+
+Do not rename, merge, omit, or substitute the required files. Do not invent a replacement schema or validator. `findings.json` is the machine-readable handoff and must mirror `05-findings-register.md`.
 
 The handoff must let a separate implementation skill proceed without rediscovering the review. Make each actionable finding independently understandable, reproducible, scoped, and verifiable. Use repository-relative file references with line numbers or symbols when stable. Link external evidence directly and include access dates.
 
@@ -108,6 +114,8 @@ python3 <skill-directory>/scripts/validate_teardown.py <project-teardown-directo
 ```
 
 Fix every validation error. Treat validator success as necessary but not sufficient: manually inspect the narrative reconciliation because a script cannot determine whether an observation deserved a finding. Report the validator result in `07-review-coverage.md`.
+
+If the bundled validator is unavailable or cannot run, do not create a substitute validator or claim structural success. Report the exact blocker and leave the teardown provisional.
 
 End the user-facing response with:
 

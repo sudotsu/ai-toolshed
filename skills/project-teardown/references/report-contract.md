@@ -12,6 +12,7 @@ project-teardown/
 ├── 05-findings-register.md
 ├── 06-implementation-sequence.md
 ├── 07-review-coverage.md
+├── findings.json
 └── evidence/
 ```
 
@@ -92,6 +93,41 @@ Severity definitions:
 
 Do not use estimated scope as a proxy for severity.
 
+Use critical only when evidence confirms, or supports with high confidence, both catastrophic impact and a realistic trigger. A missing boundary, theoretical bypass, or unproven exploit path is not automatically critical. Explain any critical rating in the impact and evidence fields.
+
+## findings.json — Machine handoff
+
+Make `findings.json` the machine-readable mirror of `05-findings-register.md`. Use this exact top-level shape:
+
+```json
+{
+  "schema_version": 1,
+  "project": "owner/project or project name",
+  "audited_revision": "immutable revision or explicit working-tree state",
+  "review_status": "complete",
+  "generated_at": "ISO-8601 timestamp",
+  "findings": []
+}
+```
+
+Give every finding these keys:
+
+```text
+id, title, type, category, severity, confidence, status, impact,
+evidence, expected_behavior, actual_behavior, root_cause,
+affected_components, recommendation, if_implemented, if_unchanged,
+dependencies, dependents, conflicts, acceptance_criteria, verification,
+estimated_scope, regression_risk, action, strategic_classification
+```
+
+- Use the same controlled lowercase values defined for the Markdown register.
+- Store `evidence` as an array of objects with `kind`, `source`, `location`, and `claim` strings.
+- Store `affected_components`, `dependencies`, `dependents`, `conflicts`, `acceptance_criteria`, and `strategic_classification` as arrays of strings. Use an empty array when none apply.
+- Use only registered finding IDs in relationship arrays.
+- Define `dependencies` as prerequisites of the current finding and `dependents` as the exact reverse links. Keep both directions consistent.
+- Keep the graph acyclic. A decision may be a dependency; phase membership is not.
+- Keep Markdown and JSON titles, controlled fields, relationships, and finding counts identical.
+
 ## 06 — Implementation sequence
 
 Create an ordered, dependency-aware plan rather than copying the severity sort. Include:
@@ -106,7 +142,7 @@ Create an ordered, dependency-aware plan rather than copying the severity sort. 
 
 For each phase list finding IDs, rationale, prerequisites, parallelizable groups, conflicts, validation gates, and expected user or business outcome. Explicitly note findings superseded by another change.
 
-End with a coverage ledger listing every open finding ID exactly once in the sequence, deferred work, or accepted risks. This prevents low-severity work from disappearing during handoff.
+End with a coverage ledger listing every finding ID exactly once in executable order, whether scheduled, deferred, or accepted. Every dependency must occur earlier than its dependent. This prevents low-severity work from disappearing and gives the implementation skill a valid starting order.
 
 ## 07 — Review coverage
 
@@ -136,3 +172,7 @@ Before delivery:
 6. Confirm the coverage matrix exposes every blocked, partial, untested, and unsupported surface.
 7. Confirm a blocked defining workflow produces a provisional verdict.
 8. Run the bundled validator and record its successful result.
+9. Confirm the JSON and Markdown registers match.
+10. Confirm the dependency graph has no cycle and every prerequisite precedes its dependent in the ledger.
+11. Recheck every critical rating against the critical-severity definition.
+12. Confirm no actionable UX, accessibility, onboarding, delivery, or polish item was dismissed merely because it is low severity.

@@ -1,0 +1,15 @@
+interface:
+  display_name: SEO Teardown
+  short_description: Evidence-led organic and AI-search teardown
+  default_prompt: Use $seo-teardown to perform a read-only, implementation-ready audit
+    of this project's organic search, local discovery, AI-mediated discovery, and
+    qualified-conversion opportunity.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

@@ -1,0 +1,11 @@
+interface:
+  display_name: "Project Revision"
+  short_description: "Plan and converge teardown findings into verified changes"
+  default_prompt: "Use $project-revision to plan, implement, and converge my validated teardown into verified project changes."
+policy:
+  products:
+    - chatgpt
+    - codex
+    - api
+    - atlas
+  allow_implicit_invocation: true
