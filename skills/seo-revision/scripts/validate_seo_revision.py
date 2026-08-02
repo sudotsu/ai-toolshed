@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -485,10 +486,12 @@ def locate_seo_teardown(explicit: Path | None = None) -> Path | None:
             return root
         return None
     candidates: list[Path] = []
-    roots = (
-        Path("/root/.codex/skills/remote-skills"),
-        Path("/root/.codex/skills"),
-    )
+    roots: list[Path] = [Path.home() / ".agents" / "skills"]
+    codex_homes = [Path.home() / ".codex"]
+    if os.environ.get("CODEX_HOME"):
+        codex_homes.insert(0, Path(os.environ["CODEX_HOME"]).expanduser())
+    for codex_home in codex_homes:
+        roots.extend((codex_home / "skills" / "remote-skills", codex_home / "skills"))
     for root in roots:
         if not root.is_dir():
             continue
@@ -509,13 +512,18 @@ def run_upstream_validator(teardown_root: Path, skill_root: Path | None, errors:
     if not validator.is_file():
         errors.append("installed seo-teardown is missing scripts/validate_seo_teardown.py")
         return None
-    proc = subprocess.run(
-        [sys.executable, str(validator), str(teardown_root)],
-        cwd=validator.parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(validator), str(teardown_root)],
+            cwd=validator.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        errors.append("exact upstream seo-teardown validation timed out after 120 seconds")
+        return resolved
     if proc.returncode != 0:
         detail = (proc.stdout + proc.stderr).strip()
         errors.append("exact upstream seo-teardown validation failed" + (f": {detail}" if detail else ""))
@@ -923,11 +931,15 @@ def validate_trace(
     if set(seen_access) != set(source_access):
         errors.append("coverage_trace.access must account for every teardown access row exactly once")
 
-    source_checks = {
-        item.get("id"): item
-        for item in coverage.get("surface_checks", [])
-        if isinstance(item, dict)
-    }
+    source_checks: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(coverage.get("surface_checks", []), start=1):
+        if not isinstance(item, dict):
+            continue
+        cid = item.get("id")
+        if not nonempty(cid):
+            errors.append(f"teardown coverage surface_checks[{index}].id must be non-empty text")
+            continue
+        source_checks[cid] = item
     check_items = trace.get("surface_checks")
     seen_checks: dict[str, dict[str, Any]] = {}
     if not isinstance(check_items, list):
@@ -939,6 +951,9 @@ def validate_trace(
         if not isinstance(item, dict):
             continue
         cid = item.get("id")
+        if not nonempty(cid):
+            errors.append(f"{label}.id must be non-empty text")
+            continue
         if cid in seen_checks:
             errors.append(f"coverage_trace repeats surface check: {cid}")
         seen_checks[cid] = item
@@ -954,11 +969,15 @@ def validate_trace(
     if set(seen_checks) != set(source_checks):
         errors.append("coverage_trace.surface_checks must account for every teardown check exactly once")
 
-    source_limits = {
-        item.get("id"): item
-        for item in coverage.get("material_limitations", [])
-        if isinstance(item, dict)
-    }
+    source_limits: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(coverage.get("material_limitations", []), start=1):
+        if not isinstance(item, dict):
+            continue
+        lid = item.get("id")
+        if not nonempty(lid):
+            errors.append(f"teardown coverage material_limitations[{index}].id must be non-empty text")
+            continue
+        source_limits[lid] = item
     limit_items = trace.get("material_limitations")
     seen_limits: dict[str, dict[str, Any]] = {}
     if not isinstance(limit_items, list):
@@ -970,6 +989,9 @@ def validate_trace(
         if not isinstance(item, dict):
             continue
         lid = item.get("id")
+        if not nonempty(lid):
+            errors.append(f"{label}.id must be non-empty text")
+            continue
         if lid in seen_limits:
             errors.append(f"coverage_trace repeats material limitation: {lid}")
         seen_limits[lid] = item
@@ -986,22 +1008,35 @@ def validate_trace(
         errors.append("coverage_trace.material_limitations must account for every teardown limitation exactly once")
 
     source_non = coverage.get("deliberate_non_pursuits", [])
-    source_pairs = Counter(
-        (item.get("topic"), item.get("rationale"))
-        for item in source_non
-        if isinstance(item, dict)
-    )
+    source_pairs: Counter[tuple[str, str]] = Counter()
+    for index, item in enumerate(source_non, start=1):
+        if not isinstance(item, dict):
+            continue
+        topic = item.get("topic")
+        rationale = item.get("rationale")
+        label = f"teardown coverage deliberate_non_pursuits[{index}]"
+        if not nonempty(topic):
+            errors.append(f"{label}.topic must be non-empty text")
+        if not nonempty(rationale):
+            errors.append(f"{label}.rationale must be non-empty text")
+        if nonempty(topic) and nonempty(rationale):
+            source_pairs[(topic, rationale)] += 1
     non_items = trace.get("deliberate_non_pursuits")
     if not isinstance(non_items, list):
         errors.append("coverage_trace.deliberate_non_pursuits must be a list")
         non_items = []
-    actual_pairs: Counter[tuple[Any, Any]] = Counter()
+    actual_pairs: Counter[tuple[str, str]] = Counter()
     for index, item in enumerate(non_items, start=1):
         label = f"coverage_trace.deliberate_non_pursuits[{index}]"
         exact_keys(item, NON_PURSUIT_KEYS, label, errors)
         if not isinstance(item, dict):
             continue
-        actual_pairs[(item.get("topic"), item.get("rationale"))] += 1
+        topic = item.get("topic")
+        rationale = item.get("rationale")
+        require_text(topic, f"{label}.topic", errors)
+        require_text(rationale, f"{label}.rationale", errors)
+        if nonempty(topic) and nonempty(rationale):
+            actual_pairs[(topic, rationale)] += 1
         require_text(item.get("preservation_rule"), f"{label}.preservation_rule", errors)
         validate_refs(item.get("evidence_ids"), f"{label}.evidence_ids", evidence_map, errors)
     if actual_pairs != source_pairs:
@@ -1221,6 +1256,11 @@ def validate_urls(
                         errors.append(f"{olabel} requires live, rendered, or controlled evidence")
                 elif dimension == "render" and "rendered-browser" not in method_names:
                     errors.append(f"{olabel} requires rendered-browser evidence")
+                elif dimension == "eligibility":
+                    if not set(method_names).intersection(
+                        {"source-inspection", "local-crawl", "rendered-browser", "live-fetch", "controlled-test"}
+                    ):
+                        errors.append(f"{olabel} requires a completed source, render, or live method")
                 elif dimension in {"index", "visibility", "ai-citation"}:
                     if not set(method_names).intersection({"serp-observation", "platform-data"}):
                         errors.append(f"{olabel} requires SERP or platform data")
@@ -1445,6 +1485,7 @@ def validate_readiness(
     authority: dict[str, dict[str, Any]],
     evidence_map: dict[str, dict[str, Any]],
     changes: dict[str, dict[str, Any]],
+    convergence: dict[str, dict[str, Any]],
     convergence_blocking: int,
     rollouts: dict[str, dict[str, Any]],
     experiments: dict[str, dict[str, Any]],
@@ -1535,6 +1576,8 @@ def validate_readiness(
             errors.append("planning-only mode cannot claim convergence")
         if changes:
             errors.append("planning-only mode cannot contain changes")
+        if convergence:
+            errors.append("planning-only mode cannot contain convergence findings")
         if any(value == "ready" for value in (integration, deployment, publication)):
             errors.append("planning-only mode cannot claim ready integration, deployment, or publication")
         if any(state == "verified" for state in delivery_states.values()):
@@ -1701,6 +1744,7 @@ def validate(
         authority,
         evidence_map,
         changes,
+        convergence,
         convergence_blocking,
         rollouts,
         experiments,

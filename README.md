@@ -40,14 +40,32 @@ Each skill is self-contained and includes its instructions plus any validators, 
 
 ## Install for Codex CLI or the IDE extension
 
-Codex discovers user-level skills under `$HOME/.agents/skills`. From WSL or another POSIX shell, copy whichever complete skill directories you want:
+Codex discovers user-level skills under `$HOME/.agents/skills`. Install skills on the same host where the Codex runtime runs: a skill copied inside WSL is not visible to a Windows IDE extension, and vice versa.
+
+The commands below replace each destination completely so removed repository files cannot remain as stale installed files. Back up local edits inside an installed skill first; replacement deletes them.
+
+From WSL or another POSIX shell:
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
-cp -R skills/project-teardown "$HOME/.agents/skills/"
-cp -R skills/project-revision "$HOME/.agents/skills/"
-cp -R skills/seo-teardown "$HOME/.agents/skills/"
-cp -R skills/seo-revision "$HOME/.agents/skills/"
+for skill in project-teardown project-revision seo-teardown seo-revision; do
+  rm -rf -- "$HOME/.agents/skills/$skill"
+  cp -R "skills/$skill" "$HOME/.agents/skills/$skill"
+done
+```
+
+From Windows PowerShell:
+
+```powershell
+$skillRoot = Join-Path $HOME ".agents\skills"
+New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
+foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision") {
+  $destination = Join-Path $skillRoot $skill
+  if (Test-Path -LiteralPath $destination) {
+    Remove-Item -LiteralPath $destination -Recurse -Force
+  }
+  Copy-Item -LiteralPath (Join-Path "skills" $skill) -Destination $destination -Recurse
+}
 ```
 
 Codex normally detects skill changes automatically. List available skills with `/skills`, or invoke one explicitly with `$`:
@@ -59,7 +77,7 @@ Use $seo-teardown to investigate this site's organic-search opportunity.
 Use $seo-revision to implement the approved SEO teardown findings.
 ```
 
-In ChatGPT Work, invoke an installed skill with `@` instead. Cloning this repository does not automatically add its skills to your ChatGPT account.
+This installation is for Codex only. Cloning or copying this repository does not add these skills to a ChatGPT account.
 
 Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
 

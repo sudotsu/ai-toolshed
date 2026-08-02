@@ -96,14 +96,19 @@ def validate(root: Path, run_tests: bool = True) -> list[str]:
         if run_tests and not errors:
             env = os.environ.copy()
             env["PYTHONPYCACHEPREFIX"] = str(compile_root / "runtime-cache")
-            proc = subprocess.run(
-                [sys.executable, "-m", "unittest", "-v", "test_validator.py"],
-                cwd=root / "scripts",
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-m", "unittest", "-v", "test_validator.py"],
+                    cwd=root / "scripts",
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=180,
+                )
+            except subprocess.TimeoutExpired:
+                errors.append("validator regression tests timed out after 180 seconds")
+                return errors
             if proc.returncode != 0:
                 errors.append(
                     "validator regression tests failed:\n" + proc.stdout + proc.stderr

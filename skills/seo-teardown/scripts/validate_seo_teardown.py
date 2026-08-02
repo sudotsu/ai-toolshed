@@ -159,13 +159,10 @@ URL_SAMPLE_ID = re.compile(r"^URL-\d{3}$")
 LIMITATION_ID = re.compile(r"^LIMIT-\d{3}$")
 HOSTNAME = re.compile(r"^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$")
 GENERIC_WINNER_LABELS = {
-    "competitors", "local competitors", "local tree-service competitors",
-    "publishers", "strategy publishers", "keno strategy publishers",
-    "cost publishers", "gambling education publishers",
-    "tools", "wheel tools", "wheel generators", "lottery tools",
+    "competitors", "local competitors", "publishers", "strategy publishers",
+    "cost publishers", "tools", "generators",
     "local service sites", "service sites", "websites", "sites",
     "third-party listings", "directories", "forums", "blogs",
-    "lottery and casino publishers", "official lottery paytables",
 }
 
 MODULE_FACETS = {
@@ -493,6 +490,9 @@ def validate_findings(
                     continue
                 require_fields(link, ("evidence_id", "role", "claim"), link_label, errors)
                 evid = link.get("evidence_id")
+                if not nonempty_string(evid):
+                    errors.append(f"{link_label}.evidence_id must be an evidence ID string")
+                    continue
                 linked_ids.append(evid)
                 if evid not in evidence_map:
                     errors.append(f"{link_label} references unknown evidence ID: {evid}")
@@ -967,8 +967,8 @@ def generic_winner(value: str) -> bool:
         return True
     generic_tokens = {
         "competitor", "competitors", "local", "service", "services", "site", "sites",
-        "publisher", "publishers", "tool", "tools", "generator", "generators", "wheel",
-        "cost", "strategy", "gambling", "education", "lottery", "casino", "third-party",
+        "publisher", "publishers", "tool", "tools", "generator", "generators",
+        "cost", "strategy", "education", "third-party",
         "listing", "listings", "directory", "directories", "forum", "forums", "blog", "blogs",
     }
     tokens = set(re.findall(r"[a-z0-9-]+", normalized))

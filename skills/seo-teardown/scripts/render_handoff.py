@@ -185,8 +185,8 @@ def render_coverage(coverage_data: dict[str, Any], findings_data: dict[str, Any]
             "",
             "## Audit module ledger",
             "",
-            "| Module | Applicable | Materiality | Status | Findings | Evidence | Limitations | Next step |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Module | Applicable | Materiality | Status | Checks | Findings | Evidence | Limitations | Next step |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
     )
     for item in coverage_data.get("modules", []):

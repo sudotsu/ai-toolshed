@@ -153,6 +153,12 @@ def validate_json(data: dict[str, Any], errors: list[str]) -> dict[str, dict[str
         for field in ARRAY_FIELDS:
             if not isinstance(finding.get(field), list):
                 errors.append(f"{finding_id} {field} must be an array")
+        for field in ("dependencies", "dependents", "conflicts"):
+            values = finding.get(field)
+            if not isinstance(values, list):
+                continue
+            if any(not isinstance(value, str) or not ID_TOKEN.fullmatch(value) for value in values):
+                errors.append(f"{finding_id} {field} must contain only finding ID strings")
         evidence = finding.get("evidence")
         if isinstance(evidence, list):
             for evidence_index, item in enumerate(evidence, start=1):
@@ -170,20 +176,36 @@ def validate_json(data: dict[str, Any], errors: list[str]) -> dict[str, dict[str
             if not isinstance(values, list):
                 continue
             for related in values:
+                if not isinstance(related, str) or not ID_TOKEN.fullmatch(related):
+                    continue
                 if related not in ids:
                     errors.append(f"{finding_id} {field} references unknown ID: {related}")
                 if related == finding_id:
                     errors.append(f"{finding_id} cannot reference itself in {field}")
 
     for finding_id, finding in indexed.items():
-        for dependency in finding.get("dependencies", []):
+        dependencies = [
+            value for value in finding.get("dependencies", [])
+            if isinstance(value, str) and ID_TOKEN.fullmatch(value)
+        ]
+        dependents = [
+            value for value in finding.get("dependents", [])
+            if isinstance(value, str) and ID_TOKEN.fullmatch(value)
+        ]
+        for dependency in dependencies:
             if finding_id not in indexed.get(dependency, {}).get("dependents", []):
                 errors.append(f"{finding_id} depends on {dependency}, but reverse dependent link is missing")
-        for dependent in finding.get("dependents", []):
+        for dependent in dependents:
             if finding_id not in indexed.get(dependent, {}).get("dependencies", []):
                 errors.append(f"{finding_id} names {dependent} as dependent, but reverse dependency is missing")
 
-    graph = {finding_id: finding.get("dependencies", []) for finding_id, finding in indexed.items()}
+    graph = {
+        finding_id: [
+            value for value in finding.get("dependencies", [])
+            if isinstance(value, str) and ID_TOKEN.fullmatch(value)
+        ]
+        for finding_id, finding in indexed.items()
+    }
     cycle = find_cycle(graph)
     if cycle:
         errors.append(f"dependency cycle: {' -> '.join(cycle)}")
@@ -236,6 +258,20 @@ def validate(root: Path) -> list[str]:
             label = MARKDOWN_LABELS[field]
             if json_finding.get(field) != md_finding.get(label):
                 errors.append(f"{finding_id} {field} differs between Markdown and JSON")
+        for field in ("dependencies", "dependents", "conflicts"):
+            label = MARKDOWN_LABELS[field]
+            markdown_value = md_finding.get(label, "")
+            markdown_ids = (
+                set()
+                if markdown_value.strip().lower() == "none"
+                else {value.strip() for value in markdown_value.split(",") if value.strip()}
+            )
+            json_ids = {
+                value for value in json_finding.get(field, [])
+                if isinstance(value, str) and ID_TOKEN.fullmatch(value)
+            }
+            if json_ids != markdown_ids:
+                errors.append(f"{finding_id} {field} differs between Markdown and JSON")
 
     executive = texts["00-executive-verdict.md"]
     coverage = texts["07-review-coverage.md"]
@@ -276,6 +312,8 @@ def validate(root: Path) -> list[str]:
         order = {finding_id: index for index, finding_id in enumerate(ledger_ids)}
         for finding_id, finding in json_findings.items():
             for dependency in finding.get("dependencies", []):
+                if not isinstance(dependency, str) or not ID_TOKEN.fullmatch(dependency):
+                    continue
                 if dependency in order and finding_id in order and order[dependency] > order[finding_id]:
                     errors.append(f"coverage ledger places {finding_id} before dependency {dependency}")
 
@@ -358,6 +396,25 @@ def self_test() -> int:
             for error in errors:
                 print(f"- {error}", file=sys.stderr)
             return 1
+    malformed = fixture_finding()
+    malformed["dependencies"] = [{}]
+    malformed["dependents"] = [[]]
+    malformed["conflicts"] = [1]
+    malformed_errors: list[str] = []
+    validate_json(
+        {
+            "schema_version": 1,
+            "project": "fixture",
+            "audited_revision": "fixture",
+            "review_status": "complete",
+            "generated_at": "2026-01-01T00:00:00Z",
+            "findings": [malformed],
+        },
+        malformed_errors,
+    )
+    if sum("must contain only finding ID strings" in error for error in malformed_errors) != 3:
+        print("Self-test failed: malformed relationship values were not rejected", file=sys.stderr)
+        return 1
     print("Self-test passed")
     return 0
 

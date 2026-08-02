@@ -17,7 +17,7 @@ from validate_seo_revision import AUTHORITY_IDS, locate_seo_teardown, validate
 def load_upstream_fixture_module():
     skill = locate_seo_teardown()
     if skill is None:
-        raise RuntimeError("installed seo-teardown skill is required for regression tests")
+        return None
     path = skill / "scripts" / "test_validator.py"
     spec = importlib.util.spec_from_file_location("seo_teardown_test_fixture", path)
     if spec is None or spec.loader is None:
@@ -271,7 +271,9 @@ def implementation_revision(teardown: Path) -> dict:
             "evidence_ids": ["REV-EVID-005"],
         }
     )
-    first, second = payload["findings"]
+    if len(payload["findings"]) < 2:
+        raise AssertionError("upstream fixture must contain at least two findings")
+    first, second = payload["findings"][:2]
     first.update(
         {
             "disposition": "implemented",
@@ -373,12 +375,14 @@ def implementation_revision(teardown: Path) -> dict:
     return payload
 
 
+@unittest.skipIf(UPSTREAM is None, "installed seo-teardown skill is required for regression tests")
 class SEORevisionValidatorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.teardown = self.root / "seo-teardown"
         self.revision = self.root / "seo-revision"
+        assert UPSTREAM is not None
         UPSTREAM.write_fixture(self.teardown)
         self.revision.mkdir()
         (self.revision / "evidence").mkdir()
@@ -434,6 +438,22 @@ class SEORevisionValidatorTests(unittest.TestCase):
         payload["coverage_trace"]["deliberate_non_pursuits"] = []
         self.assert_error(payload, "must preserve teardown topics and rationales exactly")
 
+    def test_unhashable_trace_values_are_rejected_without_crashing(self) -> None:
+        payload = base_revision(self.teardown)
+        payload["coverage_trace"]["surface_checks"][0]["id"] = {}
+        payload["coverage_trace"]["material_limitations"].append({
+            "id": [],
+            "source_status": "open",
+            "disposition": "tracked",
+            "completion_gate": "Resolve before completion.",
+            "evidence_ids": [],
+        })
+        payload["coverage_trace"]["deliberate_non_pursuits"][0]["topic"] = {}
+        errors = self.errors(payload)
+        self.assertTrue(any("surface_checks[1].id must be non-empty text" in error for error in errors), errors)
+        self.assertTrue(any("material_limitations[1].id must be non-empty text" in error for error in errors), errors)
+        self.assertTrue(any("deliberate_non_pursuits[1].topic must be non-empty text" in error for error in errors), errors)
+
     def test_planning_only_change_record_is_rejected(self) -> None:
         payload = base_revision(self.teardown)
         payload["changes"] = [
@@ -453,6 +473,21 @@ class SEORevisionValidatorTests(unittest.TestCase):
         ]
         payload["findings"][0]["change_ids"] = ["CHG-001"]
         self.assert_error(payload, "planning-only mode cannot contain actual change records")
+
+    def test_planning_only_convergence_record_is_rejected(self) -> None:
+        payload = base_revision(self.teardown)
+        payload["convergence_findings"] = [{
+            "id": "REV-001",
+            "title": "Unimplemented convergence claim",
+            "source": "planning artifact",
+            "severity": "low",
+            "status": "deferred",
+            "reason": "No implementation occurred.",
+            "reopened_finding_ids": [],
+            "change_ids": [],
+            "evidence_ids": [],
+        }]
+        self.assert_error(payload, "planning-only mode cannot contain convergence findings")
 
     def test_false_search_visibility_success_is_rejected(self) -> None:
         payload = implementation_revision(self.teardown)
@@ -490,6 +525,22 @@ class SEORevisionValidatorTests(unittest.TestCase):
         )
         url["evidence_ids"].append("REV-EVID-001")
         self.assert_error(payload, "requires SERP or platform data")
+
+    def test_owner_authorization_alone_cannot_prove_eligibility(self) -> None:
+        payload = implementation_revision(self.teardown)
+        url = payload["url_verifications"][0]
+        url["method_evidence"].append({
+            "method": "owner-authorization",
+            "status": "completed",
+            "observation": "The owner authorized local repository edits.",
+            "evidence_ids": ["REV-EVID-005"],
+            "limitations": [],
+        })
+        eligibility = next(item for item in url["observations"] if item["dimension"] == "eligibility")
+        eligibility["supported_by_methods"] = ["owner-authorization"]
+        eligibility["evidence_ids"] = ["REV-EVID-005"]
+        url["evidence_ids"].append("REV-EVID-005")
+        self.assert_error(payload, "requires a completed source, render, or live method")
 
     def test_local_eligibility_does_not_prove_post_deployment_eligibility(self) -> None:
         payload = implementation_revision(self.teardown)

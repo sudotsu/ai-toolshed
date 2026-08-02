@@ -8,6 +8,7 @@ import py_compile
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REQUIRED = (
@@ -74,11 +75,17 @@ def validate(root: Path, run_tests: bool = True) -> list[str]:
             if not resolved.exists():
                 errors.append(f"broken local link in {path.relative_to(root)}: {target}")
 
-    for path in (root / "scripts").glob("*.py"):
-        try:
-            py_compile.compile(str(path), doraise=True)
-        except py_compile.PyCompileError as exc:
-            errors.append(f"Python compile failed for {path.name}: {exc.msg}")
+    with tempfile.TemporaryDirectory() as temp:
+        compile_root = Path(temp)
+        for path in (root / "scripts").glob("*.py"):
+            try:
+                py_compile.compile(
+                    str(path),
+                    cfile=str(compile_root / f"{path.stem}.pyc"),
+                    doraise=True,
+                )
+            except py_compile.PyCompileError as exc:
+                errors.append(f"Python compile failed for {path.name}: {exc.msg}")
 
     if run_tests and not errors:
         proc = subprocess.run(

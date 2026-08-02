@@ -498,6 +498,16 @@ class ValidatorRegressionTests(unittest.TestCase):
     def test_evidence_link_mismatch_is_rejected(self) -> None:
         self.assert_invalid(lambda f, c: f["findings"][0]["evidence_links"].pop(), "must account for each evidence_id exactly once")
 
+    def test_unhashable_evidence_link_id_is_rejected_without_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "seo-teardown"
+            write_fixture(root)
+            findings = json.loads((root / "findings.json").read_text(encoding="utf-8"))
+            findings["findings"][0]["evidence_links"][0]["evidence_id"] = {}
+            (root / "findings.json").write_text(json.dumps(findings, indent=2), encoding="utf-8")
+            errors = validate(root)
+            self.assertTrue(any("evidence_id must be an evidence ID string" in error for error in errors), errors)
+
     def test_missing_supporting_evidence_role_is_rejected(self) -> None:
         def mutate(findings, _coverage):
             for link in findings["findings"][0]["evidence_links"]:
