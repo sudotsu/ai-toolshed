@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "name": "project-revision",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "references/convergence-and-verification.md",
+    "references/revision-contract.md",
+    "scripts/validate_revision.py",
+    "scripts/test_validate_revision.py"
+  ],
+  "forbidden_files": [
+    "agents/openai.yaml"
+  ],
+  "frontmatter": {
+    "keys": "name-description-only",
+    "description_min_length": 150
+  },
+  "tests": [
+    {
+      "command": ["python3", "-m", "unittest", "test_validate_revision.py"],
+      "cwd": "scripts",
+      "timeout_seconds": 180
+    }
+  ]
+}
