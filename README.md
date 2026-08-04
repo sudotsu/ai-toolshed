@@ -118,13 +118,13 @@ foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-
 }
 ```
 
-Claude surfaces a skill automatically when your request matches its `description`; you can also ask for one by name:
+Claude surfaces a skill automatically when your request matches its `description`; you can also invoke one explicitly as a slash command:
 
 ```text
-Use project-teardown to comprehensively evaluate this project.
-Use project-revision to implement the approved teardown findings.
-Use seo-teardown to investigate this site's organic-search opportunity.
-Use seo-revision to implement the approved SEO teardown findings.
+/project-teardown  — comprehensively evaluate this project.
+/project-revision  — implement the approved teardown findings.
+/seo-teardown      — investigate this site's organic-search opportunity.
+/seo-revision      — implement the approved SEO teardown findings.
 ```
 
 Each Claude package declares its structure in a `skill-manifest.json` and is checked by the shared [`tools/skill-validator`](tools/skill-validator/), which validates the four packages from a single implementation:

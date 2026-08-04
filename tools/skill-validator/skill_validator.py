@@ -67,6 +67,22 @@ class ManifestError(Exception):
     """Raised when a manifest cannot be loaded or is structurally invalid."""
 
 
+def _within_skill(root: Path, rel: str) -> bool:
+    """True if ``rel`` is a relative path that stays inside ``root``.
+
+    Rejects absolute paths and any ``..`` traversal or symlink target that
+    resolves outside the skill directory.
+    """
+    candidate = Path(rel)
+    if candidate.is_absolute():
+        return False
+    try:
+        (root / candidate).resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
+
+
 def load_manifest(root: Path) -> dict[str, Any]:
     """Load and structurally validate ``skill-manifest.json`` under ``root``."""
     path = root / MANIFEST_NAME
@@ -127,6 +143,20 @@ def load_manifest(root: Path) -> dict[str, Any]:
         timeout = entry.get("timeout_seconds", DEFAULT_TEST_TIMEOUT_SECONDS)
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
             raise ManifestError(f"manifest tests[{index}].timeout_seconds must be a positive integer")
+
+    # Every manifest-declared path must stay inside the skill directory. This
+    # blocks a manifest from satisfying a required file with, say, ../README.md
+    # or running a declared test from outside the skill.
+    for rel in required:
+        if not _within_skill(root, rel):
+            raise ManifestError(f"required_files entry escapes the skill directory: {rel}")
+    for rel in forbidden:
+        if not _within_skill(root, rel):
+            raise ManifestError(f"forbidden_files entry escapes the skill directory: {rel}")
+    for index, entry in enumerate(tests):
+        cwd = entry.get("cwd", ".")
+        if not _within_skill(root, cwd):
+            raise ManifestError(f"tests[{index}].cwd escapes the skill directory: {cwd}")
 
     return data
 
@@ -321,14 +351,20 @@ def validate(root: Path, run_tests: bool = True) -> list[str]:
     return errors
 
 
+def _looks_like_skill(path: Path) -> bool:
+    # A directory with either file is a skill candidate. Treating a SKILL.md
+    # without a manifest as a candidate lets validate() report the missing
+    # manifest instead of silently passing a skill that has no package contract.
+    return (path / MANIFEST_NAME).is_file() or (path / "SKILL.md").is_file()
+
+
 def discover_skills(path: Path) -> list[Path]:
-    """Expand ``path`` into skill directories (those containing a manifest)."""
-    if (path / MANIFEST_NAME).is_file():
+    """Expand ``path`` into skill directories (those with a manifest or SKILL.md)."""
+    if _looks_like_skill(path):
         return [path]
-    children = sorted(
-        child for child in path.iterdir() if child.is_dir() and (child / MANIFEST_NAME).is_file()
-    ) if path.is_dir() else []
-    return children
+    if not path.is_dir():
+        return []
+    return sorted(child for child in path.iterdir() if child.is_dir() and _looks_like_skill(child))
 
 
 def default_skills_root() -> Path:

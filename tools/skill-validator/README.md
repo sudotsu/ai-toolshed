@@ -95,13 +95,30 @@ For each skill, in order:
 - `name-description-only` — the frontmatter may contain *only* `name` and
   `description`. This is the strictest policy and what the bundled teardown and
   revision skills use.
-- `claude-standard` — the frontmatter may use any subset of the keys the Claude
-  Code skill spec allows: `name`, `description`, `license`, `allowed-tools`,
-  `metadata`, `compatibility`. Use this when a skill legitimately needs one of
-  the optional keys.
+- `claude-standard` — the frontmatter may use any subset of this allowlist:
+  `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`.
+  Use this when a skill legitimately needs one of the optional keys.
 
 In both policies `name` and `description` are required, and the length,
 kebab-case, and angle-bracket rules always apply.
+
+The `claude-standard` allowlist deliberately mirrors the `ALLOWED_PROPERTIES`
+set enforced by Anthropic's own skill packager (`skill-creator/scripts/quick_validate.py`)
+— it is the *Skill* frontmatter contract, not the slash-command or subagent
+frontmatter set (which adds fields such as `argument-hint`, `disable-model-invocation`,
+`user-invocable`, and `disallowed-tools`). It is intentionally a restrictive
+repository policy: a skill whose frontmatter needs a field outside this set
+should widen the allowlist here on purpose rather than have it accepted silently.
+
+### Frontmatter parsing
+
+Frontmatter is parsed with a small, dependency-free reader (standard library
+only — no PyYAML). It supports the flat `key: value` form these skills use:
+top-level keys are read from column-zero `key:` lines, and nested mapping keys
+(indented under `metadata`) are ignored for the key-policy check. It does not
+implement the full YAML grammar — quoted keys, block scalars, and flow
+collections in frontmatter are out of scope. Keep skill frontmatter to plain
+`key: value` lines so the reader and the Claude Code loader agree.
 
 ## Why data-driven manifests
 

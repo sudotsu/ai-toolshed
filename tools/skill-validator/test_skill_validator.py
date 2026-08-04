@@ -262,11 +262,42 @@ class SkillValidatorTests(unittest.TestCase):
         self.assertEqual(skill_validator.validate(self.root, run_tests=False), [])
 
     def test_declared_tests_skipped_when_structurally_broken(self):
-        # A structural error should short-circuit before the (passing) tests run,
-        # but more importantly the run must still fail overall.
+        # A structural error should short-circuit before the declared tests run.
+        # Make the declared test fail, so if it *were* run the error would appear.
+        (self.root / "scripts" / "test_ok.py").write_text(FAILING_TEST, encoding="utf-8")
         (self.root / "references" / "guide.md").unlink()
         errors = skill_validator.validate(self.root, run_tests=True)
         self.assertTrue(has(errors, "missing required file"))
+        self.assertFalse(has(errors, "tests[0] failed"))
+
+    def test_required_file_path_traversal_rejected(self):
+        manifest = dict(VALID_MANIFEST, required_files=VALID_MANIFEST["required_files"] + ["../escape.md"])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "required_files entry escapes the skill directory"))
+
+    def test_absolute_manifest_path_rejected(self):
+        manifest = dict(VALID_MANIFEST, forbidden_files=["/etc/passwd"])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "forbidden_files entry escapes the skill directory"))
+
+    def test_test_cwd_traversal_rejected(self):
+        manifest = dict(VALID_MANIFEST)
+        manifest["tests"] = [{"command": ["python3", "-c", "pass"], "cwd": "../.."}]
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "tests[0].cwd escapes the skill directory"))
+
+    def test_discover_surfaces_skill_missing_manifest(self):
+        # A sibling skill dir with SKILL.md but no manifest must be discovered
+        # (and then reported as missing its manifest), not silently skipped.
+        orphan = self.base / "orphan-skill"
+        orphan.mkdir()
+        (orphan / "SKILL.md").write_text("---\nname: orphan-skill\n---\n", encoding="utf-8")
+        found = {p.name for p in skill_validator.discover_skills(self.base)}
+        self.assertIn("orphan-skill", found)
+        self.assertEqual(skill_validator.validate(orphan, run_tests=False), ["missing skill-manifest.json"])
 
 
 if __name__ == "__main__":
