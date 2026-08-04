@@ -79,6 +79,49 @@ Use $seo-revision to implement the approved SEO teardown findings.
 
 This installation is for Codex only. Cloning or copying this repository does not add these skills to a ChatGPT account.
 
+## Install for Claude Code
+
+Claude Code discovers skills under `.claude/skills/`. This repository already ships Claude-native packages of all four skills at [`.claude/skills/`](.claude/skills/), so any Claude Code session opened in this repository picks them up automatically — no install step is required to use them here.
+
+These are separate copies from the Codex `skills/` catalog, adapted to Claude Code conventions: the Codex `agents/openai.yaml` interface file is removed, `SKILL.md` frontmatter is limited to `name` and `description`, and the `seo-revision` validator resolves its upstream `seo-teardown` package from Claude skill locations. The two trees are kept independent so each runtime gets packaging that matches it.
+
+To make the skills available in every Claude Code session on your machine, copy them into your user-level skills directory.
+
+From a POSIX shell:
+
+```bash
+mkdir -p "$HOME/.claude/skills"
+for skill in project-teardown project-revision seo-teardown seo-revision; do
+  rm -rf -- "$HOME/.claude/skills/$skill"
+  cp -R ".claude/skills/$skill" "$HOME/.claude/skills/$skill"
+done
+```
+
+From Windows PowerShell:
+
+```powershell
+$skillRoot = Join-Path $HOME ".claude\skills"
+New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
+foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision") {
+  $destination = Join-Path $skillRoot $skill
+  if (Test-Path -LiteralPath $destination) {
+    Remove-Item -LiteralPath $destination -Recurse -Force
+  }
+  Copy-Item -LiteralPath (Join-Path ".claude\skills" $skill) -Destination $destination -Recurse
+}
+```
+
+Claude surfaces a skill automatically when your request matches its `description`; you can also ask for one by name:
+
+```text
+Use project-teardown to comprehensively evaluate this project.
+Use project-revision to implement the approved teardown findings.
+Use seo-teardown to investigate this site's organic-search opportunity.
+Use seo-revision to implement the approved SEO teardown findings.
+```
+
+Each Claude package carries its own validators. Run a skill's `scripts/validate_skill.py` (where present) to check the package, and its output validator (`validate_teardown.py`, `validate_revision.py`, `validate_seo_teardown.py`, `validate_seo_revision.py`) against the artifact it produces.
+
 Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
 
 ## What's coming next
