@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "seo-teardown",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "references/audit-methodology.md",
+    "references/platform-research.md",
+    "references/report-contract.md",
+    "references/forward-testing.md",
+    "scripts/render_handoff.py",
+    "scripts/validate_seo_teardown.py",
+    "scripts/test_validator.py",
+    "assets/icon.svg"
+  ],
+  "forbidden_files": [
+    "agents/openai.yaml"
+  ],
+  "frontmatter": {
+    "keys": "name-description-only",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": ["python3", "-m", "unittest", "test_validator.py"],
+      "cwd": "scripts",
+      "timeout_seconds": 180
+    }
+  ]
+}

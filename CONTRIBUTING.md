@@ -13,4 +13,6 @@ Contributions should make AI-assisted workflows more dependable, understandable,
 
 For skills, preserve the standard `SKILL.md` frontmatter and bundle reusable scripts, references, and assets inside the skill directory. Validate scripts by running them, not only by reading them.
 
+Claude Code skills under `.claude/skills/` declare their package contract in a `skill-manifest.json` and are checked by the shared [`tools/skill-validator`](tools/skill-validator/). When you add or change one of those skills, update its manifest and run `python3 tools/skill-validator/skill_validator.py`; include the result in the pull request.
+
 By contributing, you agree that your contribution is licensed under the repository's MIT License.

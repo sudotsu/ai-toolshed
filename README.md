@@ -29,11 +29,18 @@ The repository is organized by artifact type:
 ```text
 ai-toolshed/
 ├── assets/
-└── skills/
-    ├── project-teardown/
-    ├── project-revision/
-    ├── seo-teardown/
-    └── seo-revision/
+├── skills/                     # Codex-packaged catalog
+│   ├── project-teardown/
+│   ├── project-revision/
+│   ├── seo-teardown/
+│   └── seo-revision/
+├── .claude/skills/             # Claude Code packages of the same four skills
+│   ├── project-teardown/
+│   ├── project-revision/
+│   ├── seo-teardown/
+│   └── seo-revision/
+└── tools/
+    └── skill-validator/        # shared package validator for the Claude skills
 ```
 
 Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
@@ -120,7 +127,13 @@ Use seo-teardown to investigate this site's organic-search opportunity.
 Use seo-revision to implement the approved SEO teardown findings.
 ```
 
-Each Claude package carries its own validators. Run a skill's `scripts/validate_skill.py` (where present) to check the package, and its output validator (`validate_teardown.py`, `validate_revision.py`, `validate_seo_teardown.py`, `validate_seo_revision.py`) against the artifact it produces.
+Each Claude package declares its structure in a `skill-manifest.json` and is checked by the shared [`tools/skill-validator`](tools/skill-validator/), which validates the four packages from a single implementation:
+
+```bash
+python3 tools/skill-validator/skill_validator.py
+```
+
+At runtime each skill still runs its own output validator (`validate_teardown.py`, `validate_revision.py`, `validate_seo_teardown.py`, `validate_seo_revision.py`) against the artifact it produces.
 
 Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
 
