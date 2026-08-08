@@ -14,15 +14,18 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Skill | [project-revision](skills/project-revision/) | Revalidate an approved project teardown, resolve owner decisions, implement findings in dependency order, and converge the result into an auditable readiness handoff. |
 | Skill | [seo-teardown](skills/seo-teardown/) | Investigate technical SEO, content, authority, local and AI-mediated discovery, measurement, and qualified-conversion opportunity without changing the site. |
 | Skill | [seo-revision](skills/seo-revision/) | Revalidate and implement approved SEO findings, respect repository and external-action boundaries, verify search eligibility, and produce a durable revision and experiment record. |
+| Skill | [brand-teardown](skills/brand-teardown/) | Audit positioning, differentiation, architecture, messaging, trust, identity, claims, channel expression, and competitive context without changing the audited project. |
 
-The skills form two complementary workflows:
+The skills include two implemented teardown/revision workflows and one standalone teardown:
 
 ```text
 project-teardown  -> project-revision
 seo-teardown      -> seo-revision
+brand-teardown    -> validated implementation handoff
 ```
 
 The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, and verify the resulting state without claiming unproven outcomes.
+No `brand-revision` skill is implemented yet; `brand-teardown` defines the evidence and authority boundary a future revision workflow must preserve.
 
 The repository is organized by artifact type:
 
@@ -33,7 +36,8 @@ ai-toolshed/
     ├── project-teardown/
     ├── project-revision/
     ├── seo-teardown/
-    └── seo-revision/
+    ├── seo-revision/
+    └── brand-teardown/
 ```
 
 Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
@@ -48,7 +52,7 @@ From WSL or another POSIX shell:
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
-for skill in project-teardown project-revision seo-teardown seo-revision; do
+for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown; do
   rm -rf -- "$HOME/.agents/skills/$skill"
   cp -R "skills/$skill" "$HOME/.agents/skills/$skill"
 done
@@ -59,7 +63,7 @@ From Windows PowerShell:
 ```powershell
 $skillRoot = Join-Path $HOME ".agents\skills"
 New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision") {
+foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown") {
   $destination = Join-Path $skillRoot $skill
   if (Test-Path -LiteralPath $destination) {
     Remove-Item -LiteralPath $destination -Recurse -Force
@@ -75,6 +79,7 @@ Use $project-teardown to comprehensively evaluate this project.
 Use $project-revision to implement the approved teardown findings.
 Use $seo-teardown to investigate this site's organic-search opportunity.
 Use $seo-revision to implement the approved SEO teardown findings.
+Use $brand-teardown to audit this project's brand system without changing it.
 ```
 
 This installation is for Codex only. Cloning or copying this repository does not add these skills to a ChatGPT account.
