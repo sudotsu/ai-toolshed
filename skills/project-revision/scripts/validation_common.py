@@ -11,6 +11,29 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+class _HardenedList(list):
+    """List subclass used to recursively normalize untrusted JSON.
+
+    It intentionally retains normal list equality and remains unhashable.
+    """
+
+    __slots__ = ()
+
+
+class _HardenedDict(dict):
+    """Dict subclass that retains normal value equality and remains unhashable."""
+
+    __slots__ = ()
+
+
+def harden_json(value):
+    """Recursively normalize JSON containers while preserving value equality."""
+    if isinstance(value, dict):
+        return _HardenedDict((key, harden_json(item)) for key, item in value.items())
+    if isinstance(value, list):
+        return _HardenedList(harden_json(item) for item in value)
+    return value
+
 ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*-\d{3}$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -35,14 +58,18 @@ def read_text(path: Path, label: str, errors: list[str], *, require_heading: boo
 
 def load_object(path: Path, label: str, errors: list[str]) -> dict[str, Any] | None:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         errors.append(f"cannot read {label}: {exc}")
         return None
-    if not isinstance(value, dict):
+    if not isinstance(raw, dict):
         errors.append(f"{label} must contain an object")
         return None
-    return value
+    try:
+        return harden_json(raw)
+    except RecursionError as exc:
+        errors.append(f"cannot read {label}: {exc}")
+        return None
 
 
 def exact_keys(value: Any, expected: set[str], label: str, errors: list[str]) -> bool:

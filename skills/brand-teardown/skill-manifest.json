@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "name": "brand-teardown",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "references/audit-methodology.md",
+    "references/evidence-and-claims.md",
+    "references/forward-testing.md",
+    "references/report-contract.md",
+    "scripts/render_handoff.py",
+    "scripts/test_malformed_input.py",
+    "scripts/test_validator.py",
+    "scripts/validate_brand_teardown.py",
+    "scripts/validate_skill.py",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}

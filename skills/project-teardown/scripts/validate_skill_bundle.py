@@ -10,7 +10,7 @@ import re
 import sys
 from pathlib import Path
 
-ALLOWED_TOP_LEVEL = {"SKILL.md", "agents", "assets", "references", "scripts"}
+ALLOWED_TOP_LEVEL = {"SKILL.md", "skill-manifest.json", "agents", "assets", "references", "scripts"}
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 FRONTMATTER_PATTERN = re.compile(r"\A---\n([\s\S]*?)\n---\n")
 FRONTMATTER_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.+)$")

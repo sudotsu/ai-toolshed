@@ -15,6 +15,55 @@ from urllib.parse import urlparse
 
 from render_handoff import rendered_files
 
+class _HardenedList(list):
+    """List that is hashable by identity.
+
+    Canonical JSON is untrusted. A list appearing where a scalar belongs would
+    otherwise raise TypeError the moment it reaches a set membership test, a
+    dict key, or Counter, aborting validation with a traceback instead of a
+    bounded error list. Hashing by identity makes those operations succeed and
+    return "not a member", so the surrounding check reports a normal
+    invalid-value error. isinstance(x, list) is unaffected, so every existing
+    type check still behaves identically.
+    """
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+class _HardenedDict(dict):
+    """Dict that is hashable by identity. See _HardenedList."""
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+def harden_json(value):
+    """Recursively replace JSON containers with identity-hashable equivalents."""
+    if isinstance(value, dict):
+        return _HardenedDict((key, harden_json(item)) for key, item in value.items())
+    if isinstance(value, list):
+        return _HardenedList(harden_json(item) for item in value)
+    return value
+
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REQUIRED_FILES = (
     "README.md",
     "00-executive-verdict.md",
@@ -45,7 +94,7 @@ NARRATIVE_FILES = (
     "08-owner-decisions-and-blockers.md",
 )
 
-ACCESS_CATEGORIES = {
+ACCESS_CATEGORIES = ControlledValues({
     "source_repository",
     "production_website",
     "google_search_console",
@@ -57,9 +106,9 @@ ACCESS_CATEGORIES = {
     "rank_tracking",
     "conversion_records",
     "location_serp_testing",
-}
+})
 
-MODULE_IDS = {
+MODULE_IDS = ControlledValues({
     "business_search_model",
     "live_search",
     "crawl_render_index",
@@ -74,9 +123,9 @@ MODULE_IDS = {
     "search_policy_risk",
     "measurement_experimentation",
     "strategy_prioritization",
-}
+})
 
-EVIDENCE_CLASSES = {
+EVIDENCE_CLASSES = ControlledValues({
     "official_documentation",
     "first_party_data",
     "controlled_test",
@@ -84,7 +133,7 @@ EVIDENCE_CLASSES = {
     "strong_inference",
     "industry_correlation",
     "unverified_theory",
-}
+})
 
 CONTROLLED = {
     "review_status": {"complete", "provisional"},
@@ -158,12 +207,12 @@ SERP_ID = re.compile(r"^SERP-\d{3}$")
 URL_SAMPLE_ID = re.compile(r"^URL-\d{3}$")
 LIMITATION_ID = re.compile(r"^LIMIT-\d{3}$")
 HOSTNAME = re.compile(r"^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$")
-GENERIC_WINNER_LABELS = {
+GENERIC_WINNER_LABELS = ControlledValues({
     "competitors", "local competitors", "publishers", "strategy publishers",
     "cost publishers", "tools", "generators",
     "local service sites", "service sites", "websites", "sites",
     "third-party listings", "directories", "forums", "blogs",
-}
+})
 
 MODULE_FACETS = {
     "business_search_model": {"audience_geography", "funnel_value", "qualified_conversion", "intent_demand"},
@@ -257,7 +306,7 @@ IMPLEMENTATION_REQUIRED = (
 def load_object(path: Path, errors: list[str]) -> dict[str, Any]:
     try:
         with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
+            data = harden_json(json.load(handle))
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"cannot read valid JSON from {path.name}: {exc}")
         return {}

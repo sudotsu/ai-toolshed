@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "name": "project-revision",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "agents/openai.yaml",
+    "assets/planning-template.md",
+    "assets/revision-template/00-decisions-and-scope.md",
+    "assets/revision-template/01-baseline-and-revalidation.md",
+    "assets/revision-template/02-execution-plan.md",
+    "assets/revision-template/03-implementation-ledger.md",
+    "assets/revision-template/04-verification-and-handoff.md",
+    "assets/revision-template/README.md",
+    "assets/revision-template/revision.json",
+    "references/convergence-and-verification.md",
+    "references/forward-testing.md",
+    "references/planning-contract.md",
+    "references/preservation-and-delivery.md",
+    "references/revision-contract.md",
+    "references/schemas/revision.schema.json",
+    "scripts/render_revision_views.py",
+    "scripts/test_render_revision_views.py",
+    "scripts/test_validate_revision.py",
+    "scripts/test_validate_revision_plan.py",
+    "scripts/test_validate_skill_bundle.py",
+    "scripts/validate_revision.py",
+    "scripts/validate_revision_plan.py",
+    "scripts/validate_skill_bundle.py",
+    "scripts/validation_common.py"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}

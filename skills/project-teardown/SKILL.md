@@ -121,7 +121,7 @@ python3 <skill-directory>/scripts/validate_teardown.py <project-teardown-directo
 
 Fix every project-report validation error. Rerun both renderers after every final `findings.json` edit. Use `validate_teardown.py --verbose` only when the bounded default error summary is insufficient.
 
-Skill-package validation and validator regression tests are maintenance tasks, not project teardown gates. Run them only when installing, packaging, or modifying the skill itself:
+Skill-package validation and validator regression tests are maintenance tasks, not project teardown gates. Run them only when installing, packaging, or modifying the skill itself. When changing the skill contract, the report contract, the validator, or the generated views, also follow [forward-testing.md](references/forward-testing.md); passing unit tests are not evidence that the skill still produces a useful teardown.
 
 ```bash
 python3 <skill-directory>/scripts/validate_skill_bundle.py <skill-directory> --mode installed

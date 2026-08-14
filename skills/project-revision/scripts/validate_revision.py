@@ -27,6 +27,24 @@ from validation_common import (
     validate_timestamp,
 )
 
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REVISION_FILES = (
     "README.md",
     "00-decisions-and-scope.md",
@@ -36,45 +54,45 @@ REVISION_FILES = (
     "04-verification-and-handoff.md",
     "revision.json",
 )
-TOP_LEVEL = {
+TOP_LEVEL = ControlledValues({
     "schema_version", "project", "teardown_path", "teardown_audited_revision",
     "implementation_start_revision", "implementation_end_revision",
     "revision_status", "generated_at", "existing_work_reconciled", "findings",
     "convergence_findings", "final_state",
-}
-FINDING_KEYS = {
+})
+FINDING_KEYS = ControlledValues({
     "id", "approval", "revalidation", "disposition", "sequence", "reason",
     "files_changed", "acceptance_results", "verification", "notes",
-}
-CONVERGENCE_KEYS = {
+})
+CONVERGENCE_KEYS = ControlledValues({
     "id", "title", "source", "severity", "status", "reason",
     "files_changed", "verification",
-}
-FINAL_STATE_KEYS = {
+})
+FINAL_STATE_KEYS = ControlledValues({
     "artifact_relationship", "review_convergence", "blocking_convergence_findings",
     "merge_readiness", "release_readiness", "delivery",
-}
-DELIVERY_KEYS = {"committed", "pushed", "pull_request_updated", "merged"}
-APPROVALS = {"approved", "deferred", "rejected", "accepted-risk", "not-applicable"}
-REVALIDATIONS = {"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"}
-DISPOSITIONS = {
+})
+DELIVERY_KEYS = ControlledValues({"committed", "pushed", "pull_request_updated", "merged"})
+APPROVALS = ControlledValues({"approved", "deferred", "rejected", "accepted-risk", "not-applicable"})
+REVALIDATIONS = ControlledValues({"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"})
+DISPOSITIONS = ControlledValues({
     "implemented", "already-satisfied", "retained", "deferred", "rejected",
     "accepted-risk", "not-applicable", "blocked",
-}
-ACCEPTANCE_STATUSES = {"passed", "failed", "not-applicable", "blocked"}
-CONVERGENCE_SEVERITIES = {"critical", "high", "medium", "low"}
-CONVERGENCE_STATUSES = {"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"}
-BLOCKING_SEVERITIES = {"critical", "high", "medium"}
-UNRESOLVED_CONVERGENCE = {"open", "deferred", "blocked"}
+})
+ACCEPTANCE_STATUSES = ControlledValues({"passed", "failed", "not-applicable", "blocked"})
+CONVERGENCE_SEVERITIES = ControlledValues({"critical", "high", "medium", "low"})
+CONVERGENCE_STATUSES = ControlledValues({"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"})
+BLOCKING_SEVERITIES = ControlledValues({"critical", "high", "medium"})
+UNRESOLVED_CONVERGENCE = ControlledValues({"open", "deferred", "blocked"})
 # Statuses that assert a verified conclusion, so verification must be present.
-RESOLVED_CONVERGENCE = {"fixed", "already-satisfied", "invalid"}
+RESOLVED_CONVERGENCE = ControlledValues({"fixed", "already-satisfied", "invalid"})
 # Statuses that assert nothing changed at current head.
-NO_CHANGE_CONVERGENCE = {"already-satisfied", "invalid"}
-ARTIFACT_RELATIONSHIPS = {"working-tree", "artifact-only-descendant"}
-REVIEW_CONVERGENCE = {"passed", "blocked"}
-READINESS = {"ready", "not-ready", "not-applicable"}
-DELIVERY_VALUES = {"verified", "not-performed", "unverified", "not-applicable"}
-REVIEW_COMPLETION = {"completed", "blocked"}
+NO_CHANGE_CONVERGENCE = ControlledValues({"already-satisfied", "invalid"})
+ARTIFACT_RELATIONSHIPS = ControlledValues({"working-tree", "artifact-only-descendant"})
+REVIEW_CONVERGENCE = ControlledValues({"passed", "blocked"})
+READINESS = ControlledValues({"ready", "not-ready", "not-applicable"})
+DELIVERY_VALUES = ControlledValues({"verified", "not-performed", "unverified", "not-applicable"})
+REVIEW_COMPLETION = ControlledValues({"completed", "blocked"})
 ALLOWED_DISPOSITIONS = {
     "approved": {"implemented", "already-satisfied", "retained", "blocked"},
     "deferred": {"deferred"},
@@ -138,14 +156,14 @@ DELIVERY_MARKERS = {
     "pull_request_updated": "Pull request updated",
     "merged": "Merged",
 }
-ATTRIBUTION_CLASSES = {
+ATTRIBUTION_CLASSES = ControlledValues({
     "approved-finding", "convergence-fix", "preserved-existing-work",
     "revision-artifact", "generated-ignored",
-}
+})
 
 
 def index_teardown(teardown: dict[str, Any], errors: list[str]) -> dict[str, dict[str, Any]]:
-    if teardown.get("schema_version") not in {1, 2, 3}:
+    if teardown.get("schema_version") not in (1, 2, 3):
         errors.append("teardown findings.json schema_version must be 1, 2, or 3")
     for key in ("project", "audited_revision"):
         require_nonempty_string(teardown.get(key), f"teardown {key}", errors)
@@ -310,7 +328,7 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
     exact_keys(revision, TOP_LEVEL, "revision.json", errors)
     if revision.get("schema_version") != 2:
         errors.append("revision.json schema_version must be 2")
-    if revision.get("revision_status") not in {"complete", "partial", "blocked"}:
+    if revision.get("revision_status") not in ("complete", "partial", "blocked"):
         errors.append("revision_status must be complete, partial, or blocked")
     for key in (
         "project", "teardown_path", "teardown_audited_revision",
@@ -358,9 +376,9 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
             errors.append(f"{finding_id} has invalid revalidation: {revalidation!r}")
         if disposition not in DISPOSITIONS:
             errors.append(f"{finding_id} has invalid disposition: {disposition!r}")
-        if approval in ALLOWED_DISPOSITIONS and disposition not in ALLOWED_DISPOSITIONS[approval]:
+        if isinstance(approval, str) and approval in ALLOWED_DISPOSITIONS and disposition not in ALLOWED_DISPOSITIONS[approval]:
             errors.append(f"{finding_id} disposition {disposition!r} is incompatible with approval {approval!r}")
-        if revalidation in {"stale", "not-applicable"} and (approval, disposition) != ("not-applicable", "not-applicable"):
+        if revalidation in ("stale", "not-applicable") and (approval, disposition) != ("not-applicable", "not-applicable"):
             errors.append(f"{finding_id} {revalidation} revalidation requires not-applicable approval and disposition")
         if revalidation == "already-resolved" and disposition != "already-satisfied":
             errors.append(f"{finding_id} already-resolved revalidation requires already-satisfied disposition")
@@ -408,10 +426,17 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
             if approval == "approved" and actual_criteria != expected_criteria:
                 errors.append(f"{finding_id} approved acceptance criteria must exactly match the teardown in order")
             if approval != "approved":
-                unknown = sorted(set(actual_criteria) - set(expected_criteria))
+                valid_actual_criteria = [item for item in actual_criteria if isinstance(item, str)]
+                expected_criteria_list = expected_criteria if isinstance(expected_criteria, list) else []
+                unknown = sorted(
+                    item for item in valid_actual_criteria if item not in expected_criteria_list
+                )
                 if unknown:
                     errors.append(f"{finding_id} acceptance results contain criteria not present in the teardown: {', '.join(unknown)}")
-            duplicates = sorted(item for item, count in Counter(actual_criteria).items() if item and count > 1)
+            valid_actual_criteria = [item for item in actual_criteria if isinstance(item, str)]
+            duplicates = sorted(
+                item for item, count in Counter(valid_actual_criteria).items() if item and count > 1
+            )
             if duplicates:
                 errors.append(f"{finding_id} acceptance results repeat criteria: {', '.join(duplicates)}")
 
@@ -428,14 +453,14 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
                 errors.append(f"{finding_id} is implemented but lists no changed files")
             if not verification:
                 errors.append(f"{finding_id} is implemented but lists no verification")
-            if any(status not in {"passed", "not-applicable"} for status in statuses):
+            if any(status not in ("passed", "not-applicable") for status in statuses):
                 errors.append(f"{finding_id} implemented disposition requires passed or not-applicable acceptance results")
         elif disposition == "already-satisfied":
             if files:
                 errors.append(f"{finding_id} already-satisfied disposition must not list changed files")
             if not verification:
                 errors.append(f"{finding_id} already-satisfied disposition requires verification")
-            if any(status not in {"passed", "not-applicable"} for status in statuses):
+            if any(status not in ("passed", "not-applicable") for status in statuses):
                 errors.append(f"{finding_id} already-satisfied disposition requires passed or not-applicable acceptance results")
         elif disposition == "retained":
             if files:

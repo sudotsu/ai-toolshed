@@ -9,13 +9,32 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from render_revision import render_to_disk
 from validate_seo_revision import AUTHORITY_IDS, locate_seo_teardown, validate
 
 
+def locate_seo_teardown_fixture() -> Path | None:
+    """Find seo-teardown for test fixtures only.
+
+    The production locator in validate_seo_revision deliberately searches only
+    installed skill roots, because a real revision run must validate against the
+    skill the operator actually installed. Tests additionally accept the sibling
+    checkout so the suite executes in a clean repository or CI runner instead of
+    silently skipping every case. This does not relax any production rule.
+    """
+    installed = locate_seo_teardown()
+    if installed is not None and (installed / "scripts" / "test_validator.py").is_file():
+        return installed
+    sibling = Path(__file__).resolve().parents[2] / "seo-teardown"
+    if (sibling / "SKILL.md").is_file() and (sibling / "scripts" / "test_validator.py").is_file():
+        return sibling
+    return None
+
+
 def load_upstream_fixture_module():
-    skill = locate_seo_teardown()
+    skill = locate_seo_teardown_fixture()
     if skill is None:
         return None
     path = skill / "scripts" / "test_validator.py"
@@ -28,6 +47,21 @@ def load_upstream_fixture_module():
 
 
 UPSTREAM = load_upstream_fixture_module()
+# Resolved seo-teardown skill root, passed explicitly to validate() so the
+# suite does not depend on an installed skill being present.
+SEO_TEARDOWN_SKILL = locate_seo_teardown_fixture()
+
+
+class FixtureLocationTests(unittest.TestCase):
+    def test_installed_skill_without_fixture_module_falls_back_to_sibling(self):
+        with tempfile.TemporaryDirectory() as temp:
+            installed = Path(temp) / "seo-teardown"
+            (installed / "scripts").mkdir(parents=True)
+            (installed / "SKILL.md").write_text("---\nname: seo-teardown\n---\n", encoding="utf-8")
+            (installed / "scripts" / "validate_seo_teardown.py").write_text("", encoding="utf-8")
+            with patch(f"{__name__}.locate_seo_teardown", return_value=installed):
+                resolved = locate_seo_teardown_fixture()
+        self.assertEqual(Path(__file__).resolve().parents[2] / "seo-teardown", resolved)
 
 
 def evidence(
@@ -399,7 +433,7 @@ class SEORevisionValidatorTests(unittest.TestCase):
 
     def errors(self, payload: dict) -> list[str]:
         self.write(payload)
-        return validate(self.teardown, self.revision)
+        return validate(self.teardown, self.revision, seo_teardown_skill=SEO_TEARDOWN_SKILL)
 
     def assert_error(self, payload: dict, fragment: str) -> None:
         errors = self.errors(payload)
@@ -628,7 +662,7 @@ class SEORevisionValidatorTests(unittest.TestCase):
         self.write(payload)
         path = self.revision / "03-implementation-ledger.md"
         path.write_text(path.read_text(encoding="utf-8") + "\ndrift\n", encoding="utf-8")
-        errors = validate(self.teardown, self.revision)
+        errors = validate(self.teardown, self.revision, seo_teardown_skill=SEO_TEARDOWN_SKILL)
         self.assertTrue(any("disagrees with revision.json" in error for error in errors), errors)
 
     def test_artifact_descendant_requires_immutable_verified_commit(self) -> None:
@@ -691,7 +725,7 @@ class SEORevisionValidatorTests(unittest.TestCase):
         source = self.teardown / "11-findings-register.md"
         source.write_text(source.read_text(encoding="utf-8") + "\ndrift\n", encoding="utf-8")
         self.write(payload)
-        errors = validate(self.teardown, self.revision)
+        errors = validate(self.teardown, self.revision, seo_teardown_skill=SEO_TEARDOWN_SKILL)
         self.assertTrue(any("exact upstream seo-teardown validation failed" in error for error in errors), errors)
 
 

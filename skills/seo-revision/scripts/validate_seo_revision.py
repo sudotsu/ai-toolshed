@@ -17,6 +17,55 @@ from typing import Any
 from render_revision import rendered_files
 
 
+class _HardenedList(list):
+    """List that is hashable by identity.
+
+    Canonical JSON is untrusted. A list appearing where a scalar belongs would
+    otherwise raise TypeError the moment it reaches a set membership test, a
+    dict key, or Counter, aborting validation with a traceback instead of a
+    bounded error list. Hashing by identity makes those operations succeed and
+    return "not a member", so the surrounding check reports a normal
+    invalid-value error. isinstance(x, list) is unaffected, so every existing
+    type check still behaves identically.
+    """
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+class _HardenedDict(dict):
+    """Dict that is hashable by identity. See _HardenedList."""
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+def harden_json(value):
+    """Recursively replace JSON containers with identity-hashable equivalents."""
+    if isinstance(value, dict):
+        return _HardenedDict((key, harden_json(item)) for key, item in value.items())
+    if isinstance(value, list):
+        return _HardenedList(harden_json(item) for item in value)
+    return value
+
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REQUIRED_FILES = (
     "00-decisions-authority-and-scope.md",
     "01-baseline-drift-and-revalidation.md",
@@ -28,7 +77,7 @@ REQUIRED_FILES = (
     "revision.json",
 )
 
-TOP_KEYS = {
+TOP_KEYS = ControlledValues({
     "schema_version",
     "mode",
     "project",
@@ -46,9 +95,9 @@ TOP_KEYS = {
     "convergence_findings",
     "rollouts",
     "readiness",
-}
-PROJECT_KEYS = {"name", "locator"}
-TEARDOWN_KEYS = {
+})
+PROJECT_KEYS = ControlledValues({"name", "locator"})
+TEARDOWN_KEYS = ControlledValues({
     "path",
     "findings_schema",
     "coverage_schema",
@@ -56,8 +105,8 @@ TEARDOWN_KEYS = {
     "review_status",
     "validator_command",
     "validator_result",
-}
-WORKSPACE_KEYS = {
+})
+WORKSPACE_KEYS = ControlledValues({
     "implementation_start_revision",
     "product_endpoint",
     "endpoint_kind",
@@ -67,8 +116,8 @@ WORKSPACE_KEYS = {
     "unstaged_paths",
     "untracked_paths",
     "baseline_evidence_ids",
-}
-DECISION_KEYS = {
+})
+DECISION_KEYS = ControlledValues({
     "id",
     "finding_ids",
     "status",
@@ -80,10 +129,10 @@ DECISION_KEYS = {
     "consequences",
     "prerequisites",
     "reversibility",
-}
-OPTION_KEYS = {"id", "label", "consequences", "prerequisites", "reversibility"}
-AUTHORITY_KEYS = {"id", "state", "scope", "evidence_ids", "limitations"}
-FINDING_KEYS = {
+})
+OPTION_KEYS = ControlledValues({"id", "label", "consequences", "prerequisites", "reversibility"})
+AUTHORITY_KEYS = ControlledValues({"id", "state", "scope", "evidence_ids", "limitations"})
+FINDING_KEYS = ControlledValues({
     "id",
     "title",
     "approval",
@@ -98,14 +147,14 @@ FINDING_KEYS = {
     "experiment_ids",
     "completion_gates",
     "notes",
-}
-ACCEPTANCE_KEYS = {"criterion", "status", "evidence_ids", "observation"}
-TRACE_KEYS = {"access", "surface_checks", "material_limitations", "deliberate_non_pursuits"}
-ACCESS_TRACE_KEYS = {"category", "source_status", "disposition", "completion_gate", "evidence_ids"}
-CHECK_TRACE_KEYS = {"id", "source_status", "disposition", "completion_gate", "evidence_ids"}
-LIMIT_TRACE_KEYS = {"id", "source_status", "disposition", "completion_gate", "evidence_ids"}
-NON_PURSUIT_KEYS = {"topic", "rationale", "preservation_rule", "evidence_ids"}
-CHANGE_KEYS = {
+})
+ACCEPTANCE_KEYS = ControlledValues({"criterion", "status", "evidence_ids", "observation"})
+TRACE_KEYS = ControlledValues({"access", "surface_checks", "material_limitations", "deliberate_non_pursuits"})
+ACCESS_TRACE_KEYS = ControlledValues({"category", "source_status", "disposition", "completion_gate", "evidence_ids"})
+CHECK_TRACE_KEYS = ControlledValues({"id", "source_status", "disposition", "completion_gate", "evidence_ids"})
+LIMIT_TRACE_KEYS = ControlledValues({"id", "source_status", "disposition", "completion_gate", "evidence_ids"})
+NON_PURSUIT_KEYS = ControlledValues({"topic", "rationale", "preservation_rule", "evidence_ids"})
+CHANGE_KEYS = ControlledValues({
     "id",
     "scope",
     "finding_ids",
@@ -117,8 +166,8 @@ CHANGE_KEYS = {
     "risk_categories",
     "rollout_id",
     "evidence_ids",
-}
-EVIDENCE_KEYS = {
+})
+EVIDENCE_KEYS = ControlledValues({
     "id",
     "level",
     "method",
@@ -127,8 +176,8 @@ EVIDENCE_KEYS = {
     "artifact_path",
     "limitations",
     "observed_at",
-}
-URL_KEYS = {
+})
+URL_KEYS = ControlledValues({
     "id",
     "url",
     "environment",
@@ -136,17 +185,17 @@ URL_KEYS = {
     "observations",
     "evidence_ids",
     "limitations",
-}
-METHOD_KEYS = {"method", "status", "observation", "evidence_ids", "limitations"}
-OBSERVATION_KEYS = {
+})
+METHOD_KEYS = ControlledValues({"method", "status", "observation", "evidence_ids", "limitations"})
+OBSERVATION_KEYS = ControlledValues({
     "dimension",
     "status",
     "value",
     "supported_by_methods",
     "evidence_ids",
     "limitations",
-}
-EXPERIMENT_KEYS = {
+})
+EXPERIMENT_KEYS = ControlledValues({
     "id",
     "finding_ids",
     "status",
@@ -165,8 +214,8 @@ EXPERIMENT_KEYS = {
     "observation_owner",
     "next_review_at",
     "evidence_ids",
-}
-CONVERGENCE_KEYS = {
+})
+CONVERGENCE_KEYS = ControlledValues({
     "id",
     "title",
     "source",
@@ -176,8 +225,8 @@ CONVERGENCE_KEYS = {
     "reopened_finding_ids",
     "change_ids",
     "evidence_ids",
-}
-ROLLOUT_KEYS = {
+})
+ROLLOUT_KEYS = ControlledValues({
     "id",
     "change_ids",
     "state",
@@ -186,8 +235,8 @@ ROLLOUT_KEYS = {
     "collision_checks",
     "rollback_plan",
     "evidence_ids",
-}
-READINESS_KEYS = {
+})
+READINESS_KEYS = ControlledValues({
     "revision_status",
     "review_convergence",
     "integration",
@@ -200,8 +249,8 @@ READINESS_KEYS = {
     "delivery",
     "unverified_outcomes",
     "follow_up_actions",
-}
-DELIVERY_KEYS = {
+})
+DELIVERY_KEYS = ControlledValues({
     "committed",
     "pushed",
     "pull_request",
@@ -210,10 +259,10 @@ DELIVERY_KEYS = {
     "published",
     "search_platform_actions",
     "external_profile_actions",
-}
-DELIVERY_ITEM_KEYS = {"state", "evidence_ids", "observation"}
+})
+DELIVERY_ITEM_KEYS = ControlledValues({"state", "evidence_ids", "observation"})
 
-AUTHORITY_IDS = {
+AUTHORITY_IDS = ControlledValues({
     "local_repository_edits",
     "cms_content_database_edits",
     "commit_push",
@@ -228,7 +277,7 @@ AUTHORITY_IDS = {
     "outreach_third_party",
     "purchases_external_services",
     "regulated_content_approval",
-}
+})
 DELIVERY_AUTHORITY = {
     "committed": "commit_push",
     "pushed": "commit_push",
@@ -247,14 +296,14 @@ CHANGE_SCOPE_AUTHORITY = {
     "cms": "cms_content_database_edits",
 }
 
-MODES = {"planning-only", "implementation"}
-ENDPOINT_KINDS = {"immutable-revision", "working-tree"}
-ARTIFACT_RELATIONSHIPS = {"working-tree", "artifact-only-descendant"}
-DECISION_STATUSES = {"pending", "resolved", "blocked"}
-AUTHORITY_STATES = {"authorized", "not-authorized", "not-requested", "blocked"}
-APPROVALS = {"approved", "deferred", "rejected", "accepted-risk", "not-applicable"}
-REVALIDATIONS = {"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"}
-DISPOSITIONS = {
+MODES = ControlledValues({"planning-only", "implementation"})
+ENDPOINT_KINDS = ControlledValues({"immutable-revision", "working-tree"})
+ARTIFACT_RELATIONSHIPS = ControlledValues({"working-tree", "artifact-only-descendant"})
+DECISION_STATUSES = ControlledValues({"pending", "resolved", "blocked"})
+AUTHORITY_STATES = ControlledValues({"authorized", "not-authorized", "not-requested", "blocked"})
+APPROVALS = ControlledValues({"approved", "deferred", "rejected", "accepted-risk", "not-applicable"})
+REVALIDATIONS = ControlledValues({"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"})
+DISPOSITIONS = ControlledValues({
     "planned",
     "implemented",
     "already-satisfied",
@@ -267,7 +316,7 @@ DISPOSITIONS = {
     "experiment-planned",
     "experiment-launched",
     "experiment-observing",
-}
+})
 ALLOWED_DISPOSITIONS = {
     "approved": {
         "planned",
@@ -284,9 +333,9 @@ ALLOWED_DISPOSITIONS = {
     "accepted-risk": {"accepted-risk"},
     "not-applicable": {"not-applicable"},
 }
-ACCEPTANCE_STATUSES = {"pending", "passed", "failed", "blocked", "not-applicable"}
-ACCESS_DISPOSITIONS = {"action", "decision", "blocker", "preserve", "not-applicable"}
-CHECK_DISPOSITIONS = {
+ACCEPTANCE_STATUSES = ControlledValues({"pending", "passed", "failed", "blocked", "not-applicable"})
+ACCESS_DISPOSITIONS = ControlledValues({"action", "decision", "blocker", "preserve", "not-applicable"})
+CHECK_DISPOSITIONS = ControlledValues({
     "action",
     "decision",
     "blocker",
@@ -294,11 +343,11 @@ CHECK_DISPOSITIONS = {
     "experiment",
     "completion-gate",
     "not-applicable",
-}
-LIMIT_DISPOSITIONS = {"open", "resolved", "not-applicable"}
-CHANGE_SCOPES = {"repository", "cms", "content", "configuration", "asset", "external-system"}
-RISK_LEVELS = {"low", "medium", "high"}
-RISK_CATEGORIES = {
+})
+LIMIT_DISPOSITIONS = ControlledValues({"open", "resolved", "not-applicable"})
+CHANGE_SCOPES = ControlledValues({"repository", "cms", "content", "configuration", "asset", "external-system"})
+RISK_LEVELS = ControlledValues({"low", "medium", "high"})
+RISK_CATEGORIES = ControlledValues({
     "redirect-url-migration",
     "canonical-noindex",
     "robots-sitemap",
@@ -313,8 +362,8 @@ RISK_CATEGORIES = {
     "javascript-rendering",
     "browser-mobile-accessibility",
     "other",
-}
-EVIDENCE_LEVELS = {
+})
+EVIDENCE_LEVELS = ControlledValues({
     "source-inspection",
     "build-unit",
     "local-render",
@@ -322,8 +371,8 @@ EVIDENCE_LEVELS = {
     "deployed-production",
     "search-platform-observation",
     "business-outcome",
-}
-EVIDENCE_METHODS = {
+})
+EVIDENCE_METHODS = ControlledValues({
     "source-inspection",
     "build-unit",
     "controlled-test",
@@ -335,10 +384,10 @@ EVIDENCE_METHODS = {
     "first-party-analysis",
     "external-research",
     "owner-authorization",
-}
-EVIDENCE_STATUSES = {"completed", "failed", "blocked", "not-applicable"}
-URL_ENVIRONMENTS = {"local", "preview-staging", "production"}
-OBSERVATION_DIMENSIONS = {
+})
+EVIDENCE_STATUSES = ControlledValues({"completed", "failed", "blocked", "not-applicable"})
+URL_ENVIRONMENTS = ControlledValues({"local", "preview-staging", "production"})
+OBSERVATION_DIMENSIONS = ControlledValues({
     "http",
     "canonical",
     "render",
@@ -348,16 +397,16 @@ OBSERVATION_DIMENSIONS = {
     "ai-citation",
     "conversion",
     "business-outcome",
-}
-OBSERVATION_STATUSES = {"observed", "unavailable", "not-applicable"}
-EXPERIMENT_STATUSES = {"planned", "launched", "observing", "validated", "rejected", "blocked"}
-CONVERGENCE_SEVERITIES = {"critical", "high", "medium", "low"}
-CONVERGENCE_STATUSES = {"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"}
-ROLLOUT_STATES = {"not-required", "planned", "staged", "activated", "verified", "blocked"}
-REVISION_STATUSES = {"planned", "complete", "partial", "blocked"}
-REVIEW_CONVERGENCE = {"not-run", "passed", "blocked"}
-READY_STATES = {"ready", "not-ready", "not-applicable"}
-SEARCH_VALIDATION = {
+})
+OBSERVATION_STATUSES = ControlledValues({"observed", "unavailable", "not-applicable"})
+EXPERIMENT_STATUSES = ControlledValues({"planned", "launched", "observing", "validated", "rejected", "blocked"})
+CONVERGENCE_SEVERITIES = ControlledValues({"critical", "high", "medium", "low"})
+CONVERGENCE_STATUSES = ControlledValues({"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"})
+ROLLOUT_STATES = ControlledValues({"not-required", "planned", "staged", "activated", "verified", "blocked"})
+REVISION_STATUSES = ControlledValues({"planned", "complete", "partial", "blocked"})
+REVIEW_CONVERGENCE = ControlledValues({"not-run", "passed", "blocked"})
+READY_STATES = ControlledValues({"ready", "not-ready", "not-applicable"})
+SEARCH_VALIDATION = ControlledValues({
     "not-started",
     "eligibility-verified",
     "index-observed",
@@ -365,8 +414,8 @@ SEARCH_VALIDATION = {
     "outcome-observed",
     "blocked",
     "not-applicable",
-}
-EXPERIMENT_SUMMARY = {
+})
+EXPERIMENT_SUMMARY = ControlledValues({
     "not-applicable",
     "planned",
     "launched",
@@ -375,9 +424,9 @@ EXPERIMENT_SUMMARY = {
     "rejected",
     "blocked",
     "mixed",
-}
-AUTHORIZATION_SUMMARY = {"complete", "partial", "blocked"}
-DELIVERY_STATES = {"verified", "not-performed", "unverified", "not-applicable"}
+})
+AUTHORIZATION_SUMMARY = ControlledValues({"complete", "partial", "blocked"})
+DELIVERY_STATES = ControlledValues({"verified", "not-performed", "unverified", "not-applicable"})
 
 ID_PATTERNS = {
     "decision": re.compile(r"^DEC-\d{3}$"),
@@ -393,7 +442,7 @@ PLACEHOLDER = re.compile(r"\b(?:todo|tbd|placeholder|lorem ipsum|coming soon)\b|
 
 def load_object(path: Path, label: str, errors: list[str]) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = harden_json(json.loads(path.read_text(encoding="utf-8")))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         errors.append(f"cannot read {label}: {exc}")
         return {}

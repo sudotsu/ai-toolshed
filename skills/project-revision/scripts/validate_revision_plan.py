@@ -21,6 +21,24 @@ from validation_common import (
     split_pipe,
 )
 
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REQUIRED_SECTIONS = (
     "Purpose and boundary",
     "Current-state revalidation",
@@ -46,11 +64,11 @@ REQUIRED_FIELDS = (
     "Notes",
     "Teardown record digest",
 )
-REVALIDATIONS = {"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"}
-TREATMENTS = {
+REVALIDATIONS = ControlledValues({"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"})
+TREATMENTS = ControlledValues({
     "implement", "owner-decision", "investigate", "blocker", "defer",
     "accepted-risk", "retain", "no-action",
-}
+})
 TRACE_HEADING = re.compile(r"^### ([A-Z][A-Z0-9]*-\d{3}) — (.+)$", re.MULTILINE)
 PROHIBITED_MARKERS = (
     "Revision status", "Implementation endpoint", "Artifact relationship",
@@ -118,7 +136,7 @@ def validate(teardown_root: Path, planning_document: Path) -> list[str]:
     text = read_text(planning_document, "planning document", errors)
     if teardown is None:
         return errors
-    if teardown.get("schema_version") not in {1, 2, 3}:
+    if teardown.get("schema_version") not in (1, 2, 3):
         errors.append("teardown findings.json schema_version must be 1, 2, or 3")
     findings = teardown_index(teardown, errors)
 
