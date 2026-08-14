@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "name": "seo-revision",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "references/authority-and-external-actions.md",
+    "references/forward-testing.md",
+    "references/revision-contract.md",
+    "references/verification-and-convergence.md",
+    "scripts/render_revision.py",
+    "scripts/test_validator.py",
+    "scripts/validate_seo_revision.py",
+    "scripts/validate_skill.py",
+    "assets/icon.svg",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}

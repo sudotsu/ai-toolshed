@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "name": "project-teardown",
+  "runtime": "claude-code",
+  "required_files": [
+    "SKILL.md",
+    "references/evaluation-framework.md",
+    "references/evidence-and-coverage.md",
+    "references/report-contract.md",
+    "references/schemas/findings.schema.json",
+    "references/testing-matrix.md",
+    "scripts/finding_model.py",
+    "scripts/render_findings.py",
+    "scripts/render_readme.py",
+    "scripts/test_malformed_input.py",
+    "scripts/test_render_views.py",
+    "scripts/test_validate_skill_bundle.py",
+    "scripts/test_validate_teardown.py",
+    "scripts/validate_skill_bundle.py",
+    "scripts/validate_teardown.py",
+    "assets/report-template/00-executive-verdict.md",
+    "assets/report-template/01-product-and-market.md",
+    "assets/report-template/02-user-experience.md",
+    "assets/report-template/03-technical-audit.md",
+    "assets/report-template/04-security-and-reliability.md",
+    "assets/report-template/05-findings-register.md",
+    "assets/report-template/06-implementation-sequence.md",
+    "assets/report-template/07-review-coverage.md",
+    "assets/report-template/08-claims-inventory.md",
+    "assets/report-template/findings.json",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}
