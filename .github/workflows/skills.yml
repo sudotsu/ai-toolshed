@@ -125,7 +125,11 @@ jobs:
     name: repository hygiene
     runs-on: ubuntu-latest
     steps:
+      # Full history: the whitespace step diffs against the merge base, which a
+      # shallow clone does not contain.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -138,7 +142,7 @@ jobs:
       - name: Whitespace errors in this change
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            git fetch --no-tags origin "${{ github.base_ref }}"
             git diff --check "origin/${{ github.base_ref }}...HEAD" --
           else
             git diff --check HEAD~1 HEAD -- || true
