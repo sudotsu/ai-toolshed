@@ -229,3 +229,10 @@ State:
 8. exact next action requiring the owner, external environment, credentials, review, merge, release, or deployment.
 
 Never claim a commit, push, PR update, merge, release, deployment, migration, publication, or production verification that was not directly confirmed after the final relevant change.
+
+## Forward testing
+
+When changing the revision contract, the planning contract, the validators, or the
+generated views, follow [forward-testing.md](references/forward-testing.md).
+Passing unit tests are not evidence that the skill can carry a real teardown to
+convergence.
