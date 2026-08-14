@@ -1,0 +1,180 @@
+name: skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skills-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skill:
+    name: ${{ matrix.skill }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        skill:
+          - project-teardown
+          - project-revision
+          - seo-teardown
+          - seo-revision
+          - brand-teardown
+    env:
+      SKILL: ${{ matrix.skill }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The skills are dependency-free by design. If that ever stops being true
+      # this step fails loudly rather than a missing import surfacing as a test
+      # error somewhere further down.
+      - name: Assert no third-party dependencies
+        run: |
+          if ls skills/"$SKILL"/requirements*.txt \
+                skills/"$SKILL"/pyproject.toml 2>/dev/null | grep -q .; then
+            echo "::error::$SKILL declares dependencies; skills must stay self-contained"
+            exit 1
+          fi
+
+      - name: Compile every bundled script
+        run: |
+          python -m compileall -q -f skills/"$SKILL"/scripts
+          # compileall writes __pycache__, which the package-mode bundle
+          # validator correctly rejects. Remove it so the next step sees the
+          # tree as it would ship.
+          find skills/"$SKILL" -name __pycache__ -type d -prune -exec rm -rf {} +
+
+      - name: Canonical JSON and schema sanity
+        env:
+          SKILL_DIR: skills/${{ matrix.skill }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          root = pathlib.Path(os.environ["SKILL_DIR"])
+          files = sorted(root.rglob("*.json"))
+          bad = []
+          for path in files:
+              try:
+                  json.loads(path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  bad.append(f"{path}: {exc}")
+          if bad:
+              print("::error::invalid JSON in bundle")
+              print("\n".join(bad))
+              sys.exit(1)
+          print(f"checked {len(files)} JSON file(s)")
+          PY
+
+      - name: Bundle validator
+        run: |
+          cd skills/"$SKILL"
+          if [ -f scripts/validate_skill_bundle.py ]; then
+            python scripts/validate_skill_bundle.py . --mode package
+          elif [ -f scripts/validate_skill.py ]; then
+            python scripts/validate_skill.py .
+          else
+            echo "::error::$SKILL has no bundle validator"
+            exit 1
+          fi
+
+      - name: Regression suite
+        run: |
+          cd skills/"$SKILL"
+          python -m unittest discover -s scripts -p 'test_*.py' -v 2>&1 | tee /tmp/tests.log
+          # unittest exits 0 when every test skips. A suite that skips itself
+          # into silence is the failure mode this repo already shipped once, so
+          # treat any skip as a failure in CI.
+          if grep -qE "OK \(skipped=" /tmp/tests.log; then
+            echo "::error::$SKILL skipped tests; CI requires all tests to execute"
+            exit 1
+          fi
+
+      - name: Executable entrypoints import cleanly
+        run: |
+          cd skills/"$SKILL"
+          python - <<'PY'
+          import importlib.util, pathlib, sys
+          sys.path.insert(0, "scripts")
+          failed = []
+          for script in sorted(pathlib.Path("scripts").glob("*.py")):
+              if script.name.startswith("test_"):
+                  continue
+              spec = importlib.util.spec_from_file_location(script.stem, script)
+              module = importlib.util.module_from_spec(spec)
+              try:
+                  spec.loader.exec_module(module)
+              except Exception as exc:
+                  failed.append(f"{script}: {type(exc).__name__}: {exc}")
+          if failed:
+              print("::error::entrypoint failed to import")
+              print("\n".join(failed))
+              sys.exit(1)
+          print(f"imported {len(list(pathlib.Path('scripts').glob('*.py')))} script(s)")
+          PY
+
+  repository:
+    name: repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Scoped to the changes this PR introduces, not all history. Several
+      # generated-Markdown string literals legitimately end in two spaces (a
+      # Markdown hard line break); stripping them would alter generated output
+      # and break the digest round-trip tests.
+      - name: Whitespace errors in this change
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD" --
+          else
+            git diff --check HEAD~1 HEAD -- || true
+          fi
+
+      - name: No generated caches or build artifacts committed
+        run: |
+          offenders=$(git ls-files | grep -E '(^|/)(__pycache__/|\.pytest_cache/|\.mypy_cache/)|\.pyc$|\.pyo$|\.orig$|\.rej$|~$' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::generated artifacts are tracked:"
+            echo "$offenders"
+            exit 1
+          fi
+
+      - name: No stale duplicated skill packages
+        run: |
+          # Skills live in skills/. A second tracked copy under .claude/skills or
+          # .agents/skills drifts from the source of truth and was the cause of a
+          # previous stale pull request.
+          dupes=$(git ls-files | grep -E '^(\.claude|\.agents)/skills/' || true)
+          if [ -n "$dupes" ]; then
+            echo "::error::duplicate skill packages are tracked outside skills/:"
+            echo "$dupes" | head -20
+            exit 1
+          fi
+
+      - name: Every skill is self-contained
+        run: |
+          fail=0
+          for dir in skills/*/; do
+            skill=$(basename "$dir")
+            for required in SKILL.md scripts; do
+              if [ ! -e "$dir$required" ]; then
+                echo "::error::$skill is missing $required"
+                fail=1
+              fi
+            done
+          done
+          exit $fail
