@@ -32,7 +32,11 @@
 
 | Path | Classification | Finding IDs | Baseline relationship | Rationale |
 | --- | --- | --- | --- | --- |
-| <path> | <approved-finding|convergence-fix|preserved-existing-work|revision-artifact|generated-ignored> | <IDs or None> | <baseline relationship> | <why this path exists> |
+| <path> | <classification> | <IDs or None> | <baseline relationship> | <why this path exists> |
+
+Classification is one of: `approved-finding`, `convergence-fix`, `preserved-existing-work`,
+`revision-artifact`, `generated-ignored`. They are listed here rather than inside the cell
+because a literal `|` would split the row into extra columns.
 
 ## Limitations and blocked evidence
 

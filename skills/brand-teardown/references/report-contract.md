@@ -194,7 +194,9 @@ phase_id, order, disposition, rationale, validation_gate, targets,
 non_goals, owner_or_external_actions
 ```
 
-- `order`: unique positive integer across all findings
+- `order`: unique positive integer across all findings, forming a **contiguous** range from
+  `1` through the total finding count. Every finding is ordered exactly once and no number is
+  skipped, so `1, 2, 3` is valid and `1, 5, 9` is rejected.
 - `disposition`: `implement|investigate|decide|preserve|accept_risk|defer|leave_alone`
 - `targets` and `non_goals`: non-empty string arrays
 - `owner_or_external_actions`: string array

@@ -104,6 +104,15 @@ class RenderViewTests(unittest.TestCase):
         check = subprocess.run([sys.executable, str(script), str(self.root), "--check"], capture_output=True, text=True)
         self.assertEqual(check.returncode, 0, check.stderr)
 
+    def test_render_readme_check_rejects_manual_edit(self) -> None:
+        script = Path(__file__).with_name("render_readme.py")
+        subprocess.run([sys.executable, str(script), str(self.root)], check=True, capture_output=True, text=True)
+        target = self.root / "README.md"
+        target.write_text(target.read_text(encoding="utf-8") + "manual edit\n", encoding="utf-8")
+        check = subprocess.run([sys.executable, str(script), str(self.root), "--check"], capture_output=True, text=True)
+        self.assertNotEqual(check.returncode, 0)
+        self.assertIn("stale", check.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

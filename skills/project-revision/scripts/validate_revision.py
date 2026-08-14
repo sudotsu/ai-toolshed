@@ -21,6 +21,7 @@ from validation_common import (
     parse_labeled_fields,
     read_text,
     require_nonempty_string,
+    reject_round_trip_delimiters,
     require_string_list,
     split_pipe,
     validate_timestamp,
@@ -65,6 +66,10 @@ CONVERGENCE_SEVERITIES = {"critical", "high", "medium", "low"}
 CONVERGENCE_STATUSES = {"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"}
 BLOCKING_SEVERITIES = {"critical", "high", "medium"}
 UNRESOLVED_CONVERGENCE = {"open", "deferred", "blocked"}
+# Statuses that assert a verified conclusion, so verification must be present.
+RESOLVED_CONVERGENCE = {"fixed", "already-satisfied", "invalid"}
+# Statuses that assert nothing changed at current head.
+NO_CHANGE_CONVERGENCE = {"already-satisfied", "invalid"}
 ARTIFACT_RELATIONSHIPS = {"working-tree", "artifact-only-descendant"}
 REVIEW_CONVERGENCE = {"passed", "blocked"}
 READINESS = {"ready", "not-ready", "not-applicable"}
@@ -78,7 +83,7 @@ ALLOWED_DISPOSITIONS = {
     "not-applicable": {"not-applicable"},
 }
 FINDING_HEADING = re.compile(r"^## ([A-Z][A-Z0-9]*-\d{3}) — (.+)$", re.MULTILINE)
-CONVERGENCE_HEADING = re.compile(r"^### (REV-\d{3}) — (.+)$", re.MULTILINE)
+CONVERGENCE_HEADING = re.compile(r"^## (REV-\d{3}) — (.+)$", re.MULTILINE)
 REQUIRED_LEDGER_FIELDS = (
     "Approval", "Teardown verification state", "Revalidation", "Disposition", "Sequence", "Reason", "Files changed",
     "Acceptance results", "Verification", "Notes", "Revision record digest",
@@ -386,6 +391,12 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
                     continue
                 require_nonempty_string(result.get("criterion"), f"{finding_id} acceptance criterion {result_index}", errors)
                 require_nonempty_string(result.get("evidence"), f"{finding_id} acceptance evidence {result_index}", errors)
+                for part_name in ("criterion", "evidence"):
+                    part = result.get(part_name)
+                    if isinstance(part, str):
+                        reject_round_trip_delimiters(
+                            part, f"{finding_id} acceptance {part_name} {result_index}", errors
+                        )
                 if result.get("status") not in ACCEPTANCE_STATUSES:
                     errors.append(f"{finding_id} has invalid acceptance status: {result.get('status')!r}")
                 parsed_results.append(result)
@@ -529,10 +540,20 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
             if status not in CONVERGENCE_STATUSES:
                 errors.append(f"{convergence_id} has invalid status: {status!r}")
             files = require_string_list(record.get("files_changed"), f"{convergence_id} files_changed", errors, safe_paths=True)
-            verification = require_string_list(record.get("verification"), f"{convergence_id} verification", errors, allow_empty=False)
+            # Contract section 9: verification is required for fixed,
+            # already-satisfied, and invalid. An open, deferred, or blocked
+            # finding has nothing to verify yet.
+            verification = require_string_list(
+                record.get("verification"),
+                f"{convergence_id} verification",
+                errors,
+                allow_empty=status not in RESOLVED_CONVERGENCE,
+            )
             if status == "fixed" and not files:
                 errors.append(f"{convergence_id} is fixed but lists no changed files")
-            if status != "fixed" and files:
+            # Contract section 9: only already-satisfied and invalid assert that
+            # nothing changed at current head.
+            if status in NO_CHANGE_CONVERGENCE and files:
                 errors.append(f"{convergence_id} status {status!r} must not list changed files")
             if severity in BLOCKING_SEVERITIES and status in UNRESOLVED_CONVERGENCE:
                 blocking_count += 1

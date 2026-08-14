@@ -330,11 +330,13 @@ class RevisionValidatorTests(unittest.TestCase):
         )
 
     def test_schema_version_must_be_two(self):
-        revision = copy.deepcopy(self.revision); revision["schema_version"] = 1
+        revision = copy.deepcopy(self.revision)
+        revision["schema_version"] = 1
         self.assert_error("schema_version must be 2", revision=revision)
 
     def test_timestamp_requires_timezone(self):
-        revision = copy.deepcopy(self.revision); revision["generated_at"] = "2026-07-17T13:00:00"
+        revision = copy.deepcopy(self.revision)
+        revision["generated_at"] = "2026-07-17T13:00:00"
         self.assert_error("generated_at must include a timezone", revision=revision)
 
     def test_missing_required_section_fails(self):
@@ -344,7 +346,8 @@ class RevisionValidatorTests(unittest.TestCase):
         self.assert_error("## Convergence plan", mutate_files=mutate)
 
     def test_revision_missing_finding_fails(self):
-        revision = copy.deepcopy(self.revision); revision["findings"] = revision["findings"][1:]
+        revision = copy.deepcopy(self.revision)
+        revision["findings"] = revision["findings"][1:]
         for i, record in enumerate(revision["findings"], 1): record["sequence"] = i
         self.assert_error("revision missing findings: TECH-001", revision=revision)
 
@@ -356,28 +359,34 @@ class RevisionValidatorTests(unittest.TestCase):
         self.assertTrue(any("revision has unknown findings: NEW-001" in error for error in errors), errors)
 
     def test_duplicate_sequence_fails(self):
-        revision = copy.deepcopy(self.revision); revision["findings"][1]["sequence"] = 1
+        revision = copy.deepcopy(self.revision)
+        revision["findings"][1]["sequence"] = 1
         self.assert_error("duplicate sequence 1", revision=revision)
 
     def test_dependency_order_fails(self):
         revision = copy.deepcopy(self.revision)
-        revision["findings"][0]["sequence"] = 2; revision["findings"][1]["sequence"] = 1
+        revision["findings"][0]["sequence"] = 2
+        revision["findings"][1]["sequence"] = 1
         self.assert_error("PROD-001 sequence must follow dependency TECH-001", revision=revision)
 
     def test_approved_criteria_must_match_exactly(self):
-        revision = copy.deepcopy(self.revision); revision["findings"][0]["acceptance_results"][0]["criterion"] = "Summary"
+        revision = copy.deepcopy(self.revision)
+        revision["findings"][0]["acceptance_results"][0]["criterion"] = "Summary"
         self.assert_error("approved acceptance criteria must exactly match", revision=revision)
 
     def test_implemented_requires_changed_files(self):
-        revision = copy.deepcopy(self.revision); revision["findings"][0]["files_changed"] = []
+        revision = copy.deepcopy(self.revision)
+        revision["findings"][0]["files_changed"] = []
         self.assert_error("implemented but lists no changed files", revision=revision)
 
     def test_unsafe_changed_path_fails(self):
-        revision = copy.deepcopy(self.revision); revision["findings"][0]["files_changed"] = ["../outside"]
+        revision = copy.deepcopy(self.revision)
+        revision["findings"][0]["files_changed"] = ["../outside"]
         self.assert_error("not a safe relative project path", revision=revision)
 
     def test_blocked_requires_blocked_revalidation(self):
-        revision = copy.deepcopy(self.revision); revision["findings"][2]["revalidation"] = "confirmed"
+        revision = copy.deepcopy(self.revision)
+        revision["findings"][2]["revalidation"] = "confirmed"
         self.assert_error("blocked disposition requires blocked revalidation", revision=revision)
 
     def test_blocked_requires_blocked_acceptance_result(self):
@@ -386,7 +395,9 @@ class RevisionValidatorTests(unittest.TestCase):
         self.assert_error("blocked disposition requires at least one blocked", revision=revision)
 
     def test_retained_requires_strength(self):
-        teardown = copy.deepcopy(self.teardown); teardown["findings"][3]["type"] = "defect"; teardown["findings"][3]["action"] = "fix"
+        teardown = copy.deepcopy(self.teardown)
+        teardown["findings"][3]["type"] = "defect"
+        teardown["findings"][3]["action"] = "fix"
         self.assert_error("retained disposition requires a strength", teardown=teardown)
 
     def test_ledger_title_drift_fails(self):
@@ -414,7 +425,8 @@ class RevisionValidatorTests(unittest.TestCase):
         self.assert_error("Markdown Convergence record digest differs", mutate_files=mutate)
 
     def test_fixed_convergence_requires_changed_files(self):
-        revision = copy.deepcopy(self.revision); revision["convergence_findings"][0]["files_changed"] = []
+        revision = copy.deepcopy(self.revision)
+        revision["convergence_findings"][0]["files_changed"] = []
         self.assert_error("is fixed but lists no changed files", revision=revision)
 
     def test_blocking_count_must_match(self):
@@ -436,24 +448,31 @@ class RevisionValidatorTests(unittest.TestCase):
         self.assert_error("requires completed current-head review", mutate_files=mutate)
 
     def test_complete_revision_cannot_have_blocked_approved_criterion(self):
-        revision = copy.deepcopy(self.revision); revision["revision_status"] = "complete"; revision["final_state"]["release_readiness"] = "ready"
+        revision = copy.deepcopy(self.revision)
+        revision["revision_status"] = "complete"
+        revision["final_state"]["release_readiness"] = "ready"
         self.assert_error("complete revision has a failed or blocked", revision=revision)
 
     def test_merge_ready_requires_reconciled_existing_work(self):
-        revision = copy.deepcopy(self.revision); revision["existing_work_reconciled"] = False
+        revision = copy.deepcopy(self.revision)
+        revision["existing_work_reconciled"] = False
         self.assert_error("merge readiness requires existing_work_reconciled true", revision=revision)
 
     def test_release_ready_requires_complete(self):
-        revision = copy.deepcopy(self.revision); revision["final_state"]["release_readiness"] = "ready"
+        revision = copy.deepcopy(self.revision)
+        revision["final_state"]["release_readiness"] = "ready"
         self.assert_error("release readiness requires complete revision status", revision=revision)
 
     def test_artifact_descendant_requires_verified_commit(self):
-        revision = copy.deepcopy(self.revision); revision["final_state"]["delivery"]["committed"] = "unverified"
-        revision["final_state"]["delivery"]["pushed"] = "unverified"; revision["final_state"]["delivery"]["pull_request_updated"] = "unverified"
+        revision = copy.deepcopy(self.revision)
+        revision["final_state"]["delivery"]["committed"] = "unverified"
+        revision["final_state"]["delivery"]["pushed"] = "unverified"
+        revision["final_state"]["delivery"]["pull_request_updated"] = "unverified"
         self.assert_error("artifact-only-descendant requires a verified committed", revision=revision)
 
     def test_pr_update_requires_push(self):
-        revision = copy.deepcopy(self.revision); revision["final_state"]["delivery"]["pushed"] = "unverified"
+        revision = copy.deepcopy(self.revision)
+        revision["final_state"]["delivery"]["pushed"] = "unverified"
         self.assert_error("pull request update requires verified push", revision=revision)
 
     def test_handoff_marker_drift_fails(self):

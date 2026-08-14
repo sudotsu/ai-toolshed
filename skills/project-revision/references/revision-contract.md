@@ -311,7 +311,12 @@ Additional rules:
 - `blocked` requires revalidation `blocked`, no changed files, and at least one blocked acceptance result with specific evidence.
 - Deferred, rejected, accepted-risk, and not-applicable findings must not list changed files.
 - Approval `not-applicable` requires revalidation `not-applicable`.
-- Revalidation `stale` or `not-applicable` cannot be implemented.
+- Revalidation `stale` or `not-applicable` requires **both** approval `not-applicable` **and**
+  disposition `not-applicable`. A finding the teardown can no longer substantiate is not
+  deferred or rejected — it is out of scope, and all three fields must say so.
+- Revalidation `already-resolved` requires disposition `already-satisfied`, and disposition
+  `already-satisfied` requires revalidation `already-resolved`. This pairing is bidirectional:
+  neither value is valid without the other.
 - A complete revision requires every approved finding implemented, already satisfied, or retained; every approved criterion passed or genuinely not applicable; and existing work reconciled.
 
 ## 9. Convergence finding rules

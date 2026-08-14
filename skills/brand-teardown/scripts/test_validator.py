@@ -381,6 +381,9 @@ class BrandValidatorTests(unittest.TestCase):
             mutator(findings, coverage)
             (root / "findings.json").write_text(json.dumps(findings, indent=2) + "\n", encoding="utf-8")
             (root / "coverage.json").write_text(json.dumps(coverage, indent=2) + "\n", encoding="utf-8")
+            # Regenerate the derived Markdown so the assertion below fires for the
+            # mutation under test, not for an incidental stale-generated-file error.
+            render_to_disk(root)
             errors = validate(root)
             self.assertTrue(any(fragment in error for error in errors), errors)
 

@@ -23,7 +23,7 @@ class RevisionViewRendererTests(unittest.TestCase):
         for item in self.teardown["findings"]:
             self.assertIn(f"## {item['id']} — {item['title']}", ledger)
         for item in self.revision["convergence_findings"]:
-            self.assertIn(f"### {item['id']} — {item['title']}", ledger)
+            self.assertIn(f"## {item['id']} — {item['title']}", ledger)
 
     def test_readme_surfaces_status_and_deferred_or_blocked_work(self) -> None:
         readme = render_readme(self.teardown, self.revision)

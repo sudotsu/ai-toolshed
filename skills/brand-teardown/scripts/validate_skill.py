@@ -78,12 +78,16 @@ def validate(root: Path, run_tests: bool = True) -> list[str]:
             except py_compile.PyCompileError as exc:
                 errors.append(f"Python compilation failed for {path.name}: {exc.msg}")
         if run_tests and not errors:
-            proc = subprocess.run(
-                [sys.executable, "-m", "unittest", "-v", "test_validator.py"],
-                cwd=root / "scripts", capture_output=True, text=True, check=False, timeout=180,
-            )
-            if proc.returncode != 0:
-                errors.append("validator regression tests failed:\n" + proc.stdout + proc.stderr)
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-m", "unittest", "-v", "test_validator.py"],
+                    cwd=root / "scripts", capture_output=True, text=True, check=False, timeout=180,
+                )
+            except subprocess.TimeoutExpired:
+                errors.append("validator regression tests timed out after 180s")
+            else:
+                if proc.returncode != 0:
+                    errors.append("validator regression tests failed:\n" + proc.stdout + proc.stderr)
     return errors
 
 

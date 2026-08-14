@@ -129,10 +129,16 @@ Create a claim-to-evidence matrix for every supported runtime, browser, operatin
 Use these evidence levels:
 
 - `behavioral`: workflow executed in the claimed environment;
+- `test`: existing automated check or purpose-built non-mutating diagnostic;
 - `build-only`: compiled or packaged there but behavior not exercised;
 - `source-only`: inspected platform branch or configuration;
-- `blocked`: environment unavailable or failed before the target behavior;
-- `not-tested`: no attempt made.
+- `research`: current, version-matched external source;
+- `owner-provided`: owner answer or supplied evidence;
+- `mixed`: more than one of the above contributed materially;
+- `none`: no evidence collected for this surface.
+
+`blocked` and `not-tested` are coverage **statuses**, not evidence levels. A surface that was
+never attempted takes status `not-tested` with evidence level `none`. See the report contract.
 
 Never describe build-only or source-only evidence as platform support verification.
 

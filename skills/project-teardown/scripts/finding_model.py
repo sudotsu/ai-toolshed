@@ -63,6 +63,8 @@ def _render_evidence(items: list[dict[str, Any]]) -> str:
         return "None"
     rendered: list[str] = []
     for item in items:
+        if not isinstance(item, dict):
+            continue
         rendered.append(
             f"[{item.get('kind', '')}] {item.get('claim', '')} — "
             f"{item.get('source', '')} ({item.get('location', '')})"
@@ -92,6 +94,10 @@ def render_findings_register(payload: dict[str, Any]) -> str:
         "",
     ]
     for finding in findings:
+        if not isinstance(finding, dict):
+            # Malformed input must surface as the validator's bounded error
+            # summary, not an AttributeError traceback. Matches render_readme.
+            continue
         finding_id = finding.get("id", "INVALID")
         title = finding.get("title", "Untitled finding")
         lines.extend([f"## {finding_id} — {title}", ""])

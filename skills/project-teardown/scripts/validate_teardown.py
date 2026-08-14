@@ -333,14 +333,14 @@ def parse_markdown_register(register: str, errors: list[str], schema_version: in
         repeated = sorted(label for label, count in counts.items() if count > 1)
         if repeated:
             errors.append(f"{finding_id} repeats Markdown fields: {', '.join(repeated)}")
-        fields = dict(pairs)
-        missing = [label for label in required_labels if label not in fields]
+        parsed_fields = dict(pairs)
+        missing = [label for label in required_labels if label not in parsed_fields]
         if missing:
             errors.append(f"{finding_id} missing Markdown fields: {', '.join(missing)}")
-        digest = fields.get("JSON record digest")
+        digest = parsed_fields.get("JSON record digest")
         if digest is not None and not DIGEST_PATTERN.fullmatch(digest):
             errors.append(f"{finding_id} has invalid JSON record digest")
-        parsed[finding_id] = {"title": title.strip(), **fields}
+        parsed[finding_id] = {"title": title.strip(), **parsed_fields}
     if not parsed:
         errors.append("findings register contains no valid finding headings")
     return parsed

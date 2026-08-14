@@ -20,6 +20,10 @@ def _load_object(path: Path) -> dict[str, Any]:
     return value
 
 
+class RenderError(ValueError):
+    """Raised when the revision cannot be rendered against its teardown."""
+
+
 def _pipe(values: list[str]) -> str:
     return " | ".join(values) or "None"
 
@@ -33,6 +37,10 @@ def render_implementation_ledger(teardown: dict[str, Any], revision: dict[str, A
     sections: list[str] = ["# Implementation ledger", ""]
     for item in revision.get("findings", []):
         finding_id = item["id"]
+        if finding_id not in originals:
+            # The revision references a finding the teardown does not contain.
+            # Surface it as a clear failure, not a KeyError traceback.
+            raise RenderError(f"revision references unknown teardown finding: {finding_id}")
         original = originals[finding_id]
         acceptance = _pipe([
             f"{result['criterion']} => {result['status']} => {result['evidence']}"
@@ -57,7 +65,7 @@ def render_implementation_ledger(teardown: dict[str, Any], revision: dict[str, A
     sections.extend(["# Convergence findings", ""])
     for item in revision.get("convergence_findings", []):
         sections.extend([
-            f"### {item['id']} — {item['title']}",
+            f"## {item['id']} — {item['title']}",
             "",
             f"- **Source:** {item['source']}",
             f"- **Severity:** {item['severity']}",
@@ -155,7 +163,11 @@ def main() -> int:
     args = parser.parse_args()
     teardown = _load_object(args.teardown_directory / "findings.json")
     revision = _load_object(args.revision_directory / "revision.json")
-    rendered = render_views(teardown, revision)
+    try:
+        rendered = render_views(teardown, revision)
+    except RenderError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     stale: list[str] = []
     for name, content in rendered.items():
         path = args.revision_directory / name

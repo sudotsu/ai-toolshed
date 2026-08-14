@@ -110,11 +110,14 @@ def validate(root: Path, mode: str = "installed") -> list[str]:
     errors: list[str] = []
     if not root.is_dir():
         return ["skill root does not exist or is not a directory"]
-    unexpected = sorted(path.name for path in root.iterdir() if path.name not in ALLOWED_TOP_LEVEL)
-    if unexpected:
-        errors.append(f"unexpected top-level entries: {', '.join(unexpected)}")
     if mode not in {"installed", "package"}:
         return [f"unknown validation mode: {mode}"]
+    # An installed skill is a working directory: Python may leave a cache here,
+    # and nested caches are already tolerated below. A package must be clean.
+    allowed_top_level = ALLOWED_TOP_LEVEL | {"__pycache__"} if mode == "installed" else ALLOWED_TOP_LEVEL
+    unexpected = sorted(path.name for path in root.iterdir() if path.name not in allowed_top_level)
+    if unexpected:
+        errors.append(f"unexpected top-level entries: {', '.join(unexpected)}")
     for path in root.rglob("*"):
         rel = path.relative_to(root)
         if path.is_symlink():

@@ -17,7 +17,7 @@
 
 # Convergence findings
 
-### REV-001 — <Title>
+## REV-001 — <Title>
 
 - **Source:** <manual review, PR comment, CI, fault injection, platform check, etc.>
 - **Severity:** <critical|high|medium|low>

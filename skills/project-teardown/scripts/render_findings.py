@@ -42,7 +42,11 @@ def main() -> int:
             return 1
         print("Findings register is current")
         return 0
-    target.write_text(expected, encoding="utf-8")
+    try:
+        target.write_text(expected, encoding="utf-8")
+    except OSError as exc:
+        print(f"Cannot write {target}: {exc}", file=sys.stderr)
+        return 1
     print(f"Generated {target}")
     return 0
 

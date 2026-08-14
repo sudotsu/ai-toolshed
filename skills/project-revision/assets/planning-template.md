@@ -42,6 +42,7 @@ No genuinely new findings were discovered.
 ### <ID> — <Original title>
 
 - **Teardown status:** <exact original status>
+- **Teardown verification state:** <exact original verification_state from findings.json, or `legacy-not-recorded` for schema v1/v2 findings>
 - **Revalidation:** <confirmed|changed|stale|already-resolved|not-applicable|blocked>
 - **Plan treatment:** <implement|owner-decision|investigate|blocker|defer|accepted-risk|retain|no-action>
 - **Dependencies:** <exact IDs joined by ` | ` or None>

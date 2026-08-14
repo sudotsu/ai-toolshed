@@ -214,8 +214,7 @@ EVIDENCE_KEYS = {"id", "evidence_class", "evidence_scope", "title", "publisher_o
 PHASE_KEYS = {"id", "title", "phase_type", "rationale", "finding_ids", "validation_gate", "expected_outcome"}
 ACCESS_KEYS = {"category", "status", "material_to_comprehensive", "coverage_window", "evidence_ids", "limitations", "next_step"}
 MODULE_KEYS = {"id", "applicable", "materiality", "status", "check_ids", "finding_ids", "evidence_ids", "limitations", "next_step"}
-CHECK_KEYS = {"id", "module_id", "facet", "method", "status", "evidence_ids", "finding_ids", "result", "unknowns", "limitations", "limitation_refs", "available_work_completed"}
-CHECK_KEYS = CHECK_KEYS | {"method_evidence"}
+CHECK_KEYS = {"id", "module_id", "facet", "method", "method_evidence", "status", "evidence_ids", "finding_ids", "result", "unknowns", "limitations", "limitation_refs", "available_work_completed"}
 METHOD_EVIDENCE_KEYS = {"evidence_id", "role", "observation"}
 SURFACE_KEYS = {"id", "surface", "locator", "brand", "audience", "channel", "viewport_or_format", "method", "status", "observed_at", "evidence_ids", "finding_ids", "observations", "limitations"}
 COMPETITOR_KEYS = {"id", "name", "locator", "relationship", "observed_at", "status", "category_language", "trust_conventions", "offer_conventions", "visual_patterns", "strengths", "strategic_consequence", "evidence_ids", "limitations"}
@@ -302,7 +301,10 @@ def validate_audit(data: dict[str, Any], errors: list[str]) -> tuple[date | None
     if not exact_keys(audit, required, "audit", errors):
         if not isinstance(audit, dict):
             return None, 0, None
-    assert isinstance(audit, dict)
+    if not isinstance(audit, dict):
+        # Never rely on assert for a safety guard: -O strips it.
+        errors.append("audit must be an object")
+        return None, 0, None
     for field in ("project_name", "project_locator", "audited_revision", "production_locator", "established_standard"):
         if not nonempty(audit.get(field)):
             errors.append(f"audit.{field} must be non-empty text")
@@ -487,7 +489,10 @@ def validate_findings(data: dict[str, Any], evidence: dict[str, dict[str, Any]],
             string_list(item.get(field), f"{fid}.{field}", errors, required=True)
         for field in ("dependencies", "conflicts", "preservation_constraints", "implementation_notes"):
             string_list(item.get(field), f"{fid}.{field}", errors)
-        evidence_ids = item.get("evidence_ids") if isinstance(item.get("evidence_ids"), list) else []
+        # string_list above already recorded errors for malformed entries. Filter to
+        # strings here so unhashable values cannot crash evidence.get or Counter.
+        raw_evidence_ids = item.get("evidence_ids") if isinstance(item.get("evidence_ids"), list) else []
+        evidence_ids = [evid for evid in raw_evidence_ids if isinstance(evid, str)]
         referenced_classes: set[str] = set()
         referenced_scopes: set[str] = set()
         for evid in evidence_ids:
@@ -748,6 +753,16 @@ def validate_graph_and_phases(data: dict[str, Any], findings: dict[str, dict[str
         errors.append(f"findings repeated in implementation phases: {', '.join(repeated)}")
 
 
+def audit_mapping(findings_data: dict[str, Any]) -> dict[str, Any]:
+    """Return findings_data["audit"] as a mapping.
+
+    A malformed audit value (a list, string, or null) must produce collected
+    validation errors rather than an AttributeError from a chained .get.
+    """
+    audit = findings_data.get("audit")
+    return audit if isinstance(audit, dict) else {}
+
+
 def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str, Any], findings: dict[str, dict[str, Any]], evidence: dict[str, dict[str, Any]], audit_status: str | None, errors: list[str]) -> None:
     top = {"schema_version", "review_status", "access", "modules", "surface_checks", "surface_samples", "competitor_samples", "material_limitations", "narrative_reconciliation", "validator"}
     exact_keys(data, top, "coverage.json", errors)
@@ -773,6 +788,10 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         if not isinstance(item, dict):
             continue
         category = item.get("category")
+        if not isinstance(category, str):
+            # Unhashable values would crash the set test, access_map, and Counter.
+            errors.append(f"{label}.category must be a string, got {type(category).__name__}")
+            continue
         access_seen.append(category)
         if category not in ACCESS_CATEGORIES:
             errors.append(f"{label}.category has invalid value: {category!r}")
@@ -877,9 +896,13 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
             errors.append(f"duplicate surface check ID: {cid}")
         check_map[cid] = item
         mid = item.get("module_id")
-        module_checks[mid].append(cid)
-        if mid not in MODULE_IDS:
-            errors.append(f"{cid}.module_id has invalid value")
+        if not isinstance(mid, str):
+            # Unhashable values would crash module_checks indexing and the set test.
+            errors.append(f"{cid}.module_id must be a string, got {type(mid).__name__}")
+        else:
+            module_checks[mid].append(cid)
+            if mid not in MODULE_IDS:
+                errors.append(f"{cid}.module_id has invalid value")
         if not nonempty(item.get("facet")):
             errors.append(f"{cid}.facet must be non-empty text")
         if item.get("method") not in CHECK_METHODS:
@@ -1064,13 +1087,16 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         for field in ("surface", "locator", "brand", "audience", "channel", "viewport_or_format"):
             if not nonempty(item.get(field)):
                 errors.append(f"{sid}.{field} must be non-empty text")
-        if isinstance(item.get("viewport_or_format"), str):
-            viewports.add(item["viewport_or_format"].lower())
         if item.get("method") not in CHECK_METHODS:
             errors.append(f"{sid}.method has invalid value")
         sample_status = item.get("status")
         if sample_status not in SAMPLE_STATUSES:
             errors.append(f"{sid}.status has invalid value")
+        # Only observed samples count toward the desktop/mobile coverage gate. An
+        # unavailable or not_applicable sample records that the surface was NOT
+        # captured, so counting it would let the gate pass on absent evidence.
+        if sample_status == "observed" and isinstance(item.get("viewport_or_format"), str):
+            viewports.add(item["viewport_or_format"].lower())
         parse_date(item.get("observed_at"), f"{sid}.observed_at", errors)
         refs = string_list(item.get("evidence_ids"), f"{sid}.evidence_ids", errors)
         fids = string_list(item.get("finding_ids"), f"{sid}.finding_ids", errors)
@@ -1105,7 +1131,7 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         has_mobile = any("mobile" in value or "narrow" in value for value in viewports)
         if not has_desktop or not has_mobile:
             errors.append("material available production website requires desktop and mobile surface samples")
-        production_status = findings_data.get("audit", {}).get("production_revision_status")
+        production_status = audit_mapping(findings_data).get("production_revision_status")
         if status == "complete" and production_status != "verified":
             errors.append("false complete status: available production website requires verified production revision")
 
@@ -1209,7 +1235,7 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
             errors.append("coverage.validator.result must be passed for delivery")
 
     strengths = [item for item in findings.values() if item.get("kind") == "strength" and item.get("status") == "retained_strength"]
-    justification = findings_data.get("audit", {}).get("zero_strengths_justification")
+    justification = audit_mapping(findings_data).get("zero_strengths_justification")
     if not strengths and not nonempty(justification):
         errors.append("zero retained strengths requires audit.zero_strengths_justification")
     if strengths and justification is not None:
@@ -1284,7 +1310,7 @@ def validate(root: Path) -> list[str]:
         return errors
     audit_end, window, status = validate_audit(findings_data, errors)
     evidence = validate_evidence(root, findings_data, audit_end, window, errors)
-    audit_revision_refs = findings_data.get("audit", {}).get("production_revision_evidence_ids", [])
+    audit_revision_refs = audit_mapping(findings_data).get("production_revision_evidence_ids", [])
     if isinstance(audit_revision_refs, list):
         for evid in audit_revision_refs:
             if evid not in evidence:

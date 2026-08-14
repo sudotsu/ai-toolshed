@@ -1,4 +1,4 @@
 interface:
   display_name: "Project Revision"
   short_description: "Plan and implement validated teardown findings"
-  default_prompt: "Use $project-revision to revalidate a project teardown, preserve existing work, and produce either a validated plan or converged implementation."
+  default_prompt: "Use $project-revision to revalidate a project teardown, preserve existing work, and produce either a validated plan or converged implementation. Implement only owner-approved findings; a planning-only request must not modify product files."

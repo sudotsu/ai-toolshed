@@ -102,7 +102,30 @@ def require_string_list(
         errors.append(f"{label} contains duplicates: {', '.join(duplicates)}")
     if not allow_empty and not cleaned:
         errors.append(f"{label} must contain at least one item")
+    for index, item in enumerate(cleaned, start=1):
+        reject_round_trip_delimiters(item, f"{label} item {index}", errors)
     return cleaned
+
+
+# Markdown views join list values with " | " and acceptance results with " => ".
+# The validator parses those views back and compares them to the JSON, so a value
+# containing either delimiter cannot survive the round trip. Reject it explicitly
+# rather than letting it surface as a confusing structural parse error.
+ROUND_TRIP_DELIMITERS = (" | ", " => ")
+
+
+def reject_round_trip_delimiters(value: str, label: str, errors: list[str]) -> None:
+    for delimiter in ROUND_TRIP_DELIMITERS:
+        if delimiter in value:
+            errors.append(
+                f"{label} must not contain {delimiter!r}; it is a Markdown round-trip "
+                f"delimiter and would corrupt the generated view"
+            )
+    if value.strip() == "None":
+        errors.append(
+            f"{label} must not be the literal 'None'; that value marks an empty list "
+            f"in the Markdown view and cannot be distinguished from one"
+        )
 
 
 def is_safe_relative_path(value: str) -> bool:
@@ -131,7 +154,10 @@ def marker(text: str, label: str, errors: list[str]) -> str | None:
 
 def markdown_section(text: str, heading: str, level: int = 2) -> str | None:
     prefix = "#" * level
-    pattern = rf"^{re.escape(prefix)} {re.escape(heading)}\s*$([\s\S]*?)(?=^{'#' * level} |\Z)"
+    # Terminate at the next heading of this level *or higher* (fewer #). Stopping
+    # only at the same level lets a level-2 section absorb a following level-1
+    # heading and all of its content.
+    pattern = rf"^{re.escape(prefix)} {re.escape(heading)}\s*$([\s\S]*?)(?=^#{{1,{level}}} |\Z)"
     match = re.search(pattern, text, re.MULTILINE)
     return match.group(1) if match else None
 
