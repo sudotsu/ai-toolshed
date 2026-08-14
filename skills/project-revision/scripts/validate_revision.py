@@ -163,7 +163,7 @@ ATTRIBUTION_CLASSES = ControlledValues({
 
 
 def index_teardown(teardown: dict[str, Any], errors: list[str]) -> dict[str, dict[str, Any]]:
-    if teardown.get("schema_version") not in {1, 2, 3}:
+    if teardown.get("schema_version") not in (1, 2, 3):
         errors.append("teardown findings.json schema_version must be 1, 2, or 3")
     for key in ("project", "audited_revision"):
         require_nonempty_string(teardown.get(key), f"teardown {key}", errors)
@@ -328,7 +328,7 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
     exact_keys(revision, TOP_LEVEL, "revision.json", errors)
     if revision.get("schema_version") != 2:
         errors.append("revision.json schema_version must be 2")
-    if revision.get("revision_status") not in {"complete", "partial", "blocked"}:
+    if revision.get("revision_status") not in ("complete", "partial", "blocked"):
         errors.append("revision_status must be complete, partial, or blocked")
     for key in (
         "project", "teardown_path", "teardown_audited_revision",
@@ -376,9 +376,9 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
             errors.append(f"{finding_id} has invalid revalidation: {revalidation!r}")
         if disposition not in DISPOSITIONS:
             errors.append(f"{finding_id} has invalid disposition: {disposition!r}")
-        if approval in ALLOWED_DISPOSITIONS and disposition not in ALLOWED_DISPOSITIONS[approval]:
+        if isinstance(approval, str) and approval in ALLOWED_DISPOSITIONS and disposition not in ALLOWED_DISPOSITIONS[approval]:
             errors.append(f"{finding_id} disposition {disposition!r} is incompatible with approval {approval!r}")
-        if revalidation in {"stale", "not-applicable"} and (approval, disposition) != ("not-applicable", "not-applicable"):
+        if revalidation in ("stale", "not-applicable") and (approval, disposition) != ("not-applicable", "not-applicable"):
             errors.append(f"{finding_id} {revalidation} revalidation requires not-applicable approval and disposition")
         if revalidation == "already-resolved" and disposition != "already-satisfied":
             errors.append(f"{finding_id} already-resolved revalidation requires already-satisfied disposition")
@@ -426,10 +426,17 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
             if approval == "approved" and actual_criteria != expected_criteria:
                 errors.append(f"{finding_id} approved acceptance criteria must exactly match the teardown in order")
             if approval != "approved":
-                unknown = sorted(set(actual_criteria) - set(expected_criteria))
+                valid_actual_criteria = [item for item in actual_criteria if isinstance(item, str)]
+                expected_criteria_list = expected_criteria if isinstance(expected_criteria, list) else []
+                unknown = sorted(
+                    item for item in valid_actual_criteria if item not in expected_criteria_list
+                )
                 if unknown:
                     errors.append(f"{finding_id} acceptance results contain criteria not present in the teardown: {', '.join(unknown)}")
-            duplicates = sorted(item for item, count in Counter(actual_criteria).items() if item and count > 1)
+            valid_actual_criteria = [item for item in actual_criteria if isinstance(item, str)]
+            duplicates = sorted(
+                item for item, count in Counter(valid_actual_criteria).items() if item and count > 1
+            )
             if duplicates:
                 errors.append(f"{finding_id} acceptance results repeat criteria: {', '.join(duplicates)}")
 
@@ -446,14 +453,14 @@ def validate(teardown_root: Path, revision_root: Path) -> list[str]:
                 errors.append(f"{finding_id} is implemented but lists no changed files")
             if not verification:
                 errors.append(f"{finding_id} is implemented but lists no verification")
-            if any(status not in {"passed", "not-applicable"} for status in statuses):
+            if any(status not in ("passed", "not-applicable") for status in statuses):
                 errors.append(f"{finding_id} implemented disposition requires passed or not-applicable acceptance results")
         elif disposition == "already-satisfied":
             if files:
                 errors.append(f"{finding_id} already-satisfied disposition must not list changed files")
             if not verification:
                 errors.append(f"{finding_id} already-satisfied disposition requires verification")
-            if any(status not in {"passed", "not-applicable"} for status in statuses):
+            if any(status not in ("passed", "not-applicable") for status in statuses):
                 errors.append(f"{finding_id} already-satisfied disposition requires passed or not-applicable acceptance results")
         elif disposition == "retained":
             if files:

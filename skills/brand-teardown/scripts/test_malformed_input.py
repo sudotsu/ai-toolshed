@@ -79,7 +79,8 @@ class MalformedInputTests(unittest.TestCase):
     def _fixture(self) -> Path:
         from test_validator import write_fixture
         root = Path(tempfile.mkdtemp()) / "brand-teardown"
-        write_fixture(root); self.addCleanup(shutil.rmtree, root.parent, True)
+        write_fixture(root)
+        self.addCleanup(shutil.rmtree, root.parent, True)
         return root
 
     def _sweep(self) -> dict[str, tuple[str, str]]:

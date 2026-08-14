@@ -3,17 +3,19 @@
 Use this protocol when changing the revision contract, the planning contract, the
 validators, or the generated views. Unit tests prove the validators accept and
 reject synthetic shapes; only a forward test proves the skill can carry a real
-teardown through to a converged, auditable implementation.
+teardown through the selected operating mode to an auditable planning document
+or converged implementation.
 
 ## What counts as a forward test
 
-Distinguish three evidence levels and never present a weaker one as a stronger one:
+Distinguish four evidence levels and never present a weaker one as a stronger one:
 
 | Level | What it proves | Acceptable as release evidence |
 | --- | --- | --- |
 | **Schema fixture** | The validator accepts or rejects a synthetic payload | No, on its own |
+| **Canonical planning replay** | A previously produced real planning-only document still validates against its teardown | Yes, for planning-contract or planning-validator changes |
 | **Canonical artifact replay** | A previously produced real revision still validates against its teardown, and generated views still render byte-identically | Yes, for contract or renderer changes |
-| **Full behavioral forward test** | A fresh agent, given a real teardown and owner decisions, implemented approved findings and converged without weakening a rule | Required before declaring the skill improved |
+| **Full behavioral forward test** | A fresh agent, given a real teardown and the inputs appropriate to its operating mode, produced a valid planning document or implemented approved findings and converged without weakening a rule | Required before declaring the selected mode improved |
 
 ## Test selection
 
@@ -30,10 +32,11 @@ that silently discards it has failed regardless of validator output.
 
 ## Prompt discipline
 
-Give the agent the teardown path, the project, the owner approval matrix, and the
-operating mode. Do not reveal which findings you expect to be implemented,
-deferred, or found stale. Do not hint at convergence findings. A forward test that
-supplies the answers measures instruction-following, not revision quality.
+Give the agent the teardown path, the project, and the operating mode. For
+implementation mode, also provide the owner approval matrix. Do not reveal which
+findings you expect to be implemented, deferred, or found stale. Do not hint at
+convergence findings. A forward test that supplies the answers measures
+instruction-following, not revision quality.
 
 ## Evaluation rubric
 
@@ -49,6 +52,14 @@ Judge each output on:
 - Generated views byte-identical to a fresh render from `revision.json`.
 - Acceptance criteria genuinely evaluated, not marked passed by assertion.
 
+For planning-only mode, apply the planning contract instead of the
+implementation-only items above: every finding and evidence condition must be
+traceable, current-state revalidation and owner decisions must be explicit, the
+planning document must pass `validate_revision_plan.py`, and the record must
+confirm that no product edits or convergence testing occurred. Do not require
+`revision.json`, implementation ledgers, generated views, the renderer, or the
+implementation validator in planning-only mode.
+
 ## Failure-driven improvement
 
 When a forward test exposes a weakness, fix the **skill**, not the test project,
@@ -62,10 +73,13 @@ Every forward test recorded as release evidence must state:
 
 - the skill revision under test (commit SHA);
 - the source teardown, its audited revision, and its `findings.json` SHA-256;
-- the implementation start and end revisions of the target project;
-- the exact commands run, including both validators and the renderer;
+- the target project's revision before and after the run, confirming no product
+  change in planning-only mode or the implementation endpoints otherwise;
+- the exact commands run: the planning validator for planning-only mode, or the
+  implementation validator, upstream teardown validator, and renderer for
+  implementation mode;
 - the validator result verbatim;
-- SHA-256 of `revision.json` produced;
+- SHA-256 of the planning document or `revision.json`, according to the mode;
 - the disposition of any independent review, including rejected leads;
 - which evidence level above was achieved, and what remained untested.
 

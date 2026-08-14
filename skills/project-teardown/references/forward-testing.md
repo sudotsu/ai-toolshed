@@ -25,8 +25,11 @@ Use at least two materially different project shapes, for example:
   claims — the case where coverage accounting and provisional status matter.
 
 A repository plus a running instance is preferred. Representative artifacts are
-acceptable when access is limited; record the limitation. **Never modify the test
-project.** The teardown must leave it byte-identical.
+acceptable when access is limited; record the limitation. **Never modify the
+original test project.** Run the skill and create the required
+`project-teardown/` artifacts only in a disposable clone or worktree, leaving the
+original tested project byte-identical. Record that isolation boundary and any
+limitation that prevents complete preservation verification.
 
 ## Prompt discipline
 
@@ -64,10 +67,19 @@ Every forward test recorded as release evidence must state:
 
 - the skill revision under test (commit SHA);
 - the audited project and its exact revision;
+- the initial branch plus staged, unstaged, and untracked path inventory;
+- the disposable clone or worktree boundary and a verifiable result showing the
+  original project remained byte-identical;
+- required prerequisites and the access available, unavailable, or blocked;
+- operating-system, runtime, dependency, browser, and relevant tool versions;
 - the exact commands run, including validator and renderer invocations;
 - the validator result verbatim;
 - SHA-256 of each canonical artifact (`findings.json`) produced;
+- the sanitized evidence inventory, its safe storage paths, and hashes or an
+  equivalent integrity result demonstrating that the evidence was preserved;
 - the disposition of any independent review of the output;
+- whether the defining workflows and failure paths were repeated, how many
+  times, and whether the observations were consistent;
 - which evidence level above was achieved, and what remained untested.
 
 Store the record under `evidence/` in the teardown handoff, sanitized. Never copy

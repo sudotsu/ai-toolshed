@@ -137,6 +137,10 @@ def load_manifest(root: Path) -> dict[str, Any]:
             isinstance(part, str) for part in command
         ):
             raise ManifestError(f"manifest tests[{index}].command must be a non-empty list of strings")
+        if not command[0]:
+            raise ManifestError(f"manifest tests[{index}].command executable must be non-empty")
+        if any("\x00" in part for part in command):
+            raise ManifestError(f"manifest tests[{index}].command must not contain NUL characters")
         cwd = entry.get("cwd", ".")
         if not isinstance(cwd, str):
             raise ManifestError(f"manifest tests[{index}].cwd must be a string")
@@ -313,8 +317,8 @@ def run_declared_tests(
                 check=False,
                 timeout=timeout,
             )
-        except FileNotFoundError:
-            errors.append(f"tests[{index}] command not found: {command[0]}")
+        except (OSError, ValueError) as exc:
+            errors.append(f"tests[{index}] could not start: {exc}")
             continue
         except subprocess.TimeoutExpired:
             errors.append(f"tests[{index}] timed out after {timeout}s")
@@ -369,7 +373,7 @@ def discover_skills(path: Path) -> list[Path]:
 
 def default_skills_root() -> Path:
     # tools/skill-validator/skill_validator.py -> repo root is two levels up.
-    return Path(__file__).resolve().parents[2] / ".claude" / "skills"
+    return Path(__file__).resolve().parents[2] / "skills"
 
 
 def main() -> int:
@@ -378,7 +382,7 @@ def main() -> int:
         "paths",
         nargs="*",
         type=Path,
-        help="skill directories, or roots containing skills (default: bundled .claude/skills)",
+        help="skill directories, or roots containing skills (default: bundled skills/)",
     )
     parser.add_argument("--no-tests", action="store_true", help="skip declared regression tests")
     args = parser.parse_args()

@@ -12,30 +12,22 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 class _HardenedList(list):
-    """List that is hashable by identity.
+    """List subclass used to recursively normalize untrusted JSON.
 
-    Canonical JSON is untrusted. A list appearing where a scalar belongs would
-    otherwise raise TypeError the moment it reaches a set membership test, a
-    dict key, or Counter, aborting validation with a traceback instead of a
-    bounded error list. Hashing by identity makes those operations succeed and
-    return "not a member", so the surrounding check reports a normal
-    invalid-value error. isinstance(x, list) is unaffected, so every existing
-    type check still behaves identically.
+    It intentionally retains normal list equality and remains unhashable.
     """
 
     __slots__ = ()
-    __hash__ = object.__hash__
 
 
 class _HardenedDict(dict):
-    """Dict that is hashable by identity. See _HardenedList."""
+    """Dict subclass that retains normal value equality and remains unhashable."""
 
     __slots__ = ()
-    __hash__ = object.__hash__
 
 
 def harden_json(value):
-    """Recursively replace JSON containers with identity-hashable equivalents."""
+    """Recursively normalize JSON containers while preserving value equality."""
     if isinstance(value, dict):
         return _HardenedDict((key, harden_json(item)) for key, item in value.items())
     if isinstance(value, list):
@@ -66,14 +58,18 @@ def read_text(path: Path, label: str, errors: list[str], *, require_heading: boo
 
 def load_object(path: Path, label: str, errors: list[str]) -> dict[str, Any] | None:
     try:
-        value = harden_json(json.loads(path.read_text(encoding="utf-8")))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         errors.append(f"cannot read {label}: {exc}")
         return None
-    if not isinstance(value, dict):
+    if not isinstance(raw, dict):
         errors.append(f"{label} must contain an object")
         return None
-    return value
+    try:
+        return harden_json(raw)
+    except RecursionError as exc:
+        errors.append(f"cannot read {label}: {exc}")
+        return None
 
 
 def exact_keys(value: Any, expected: set[str], label: str, errors: list[str]) -> bool:

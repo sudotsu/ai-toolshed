@@ -144,8 +144,8 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags origin "${{ github.base_ref }}"
             git diff --check "origin/${{ github.base_ref }}...HEAD" --
-          else
-            git diff --check HEAD~1 HEAD -- || true
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git diff --check HEAD~1 HEAD --
           fi
 
       - name: No generated caches or build artifacts committed

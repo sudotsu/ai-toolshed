@@ -11,6 +11,7 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import skill_validator
 
@@ -145,6 +146,18 @@ class SkillValidatorTests(unittest.TestCase):
         errors = skill_validator.validate(self.root, run_tests=False)
         self.assertTrue(has(errors, "required_files must be a non-empty list"))
 
+    def test_manifest_empty_declared_test_executable(self):
+        manifest = dict(VALID_MANIFEST, tests=[{"command": [""]}])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "command executable must be non-empty"))
+
+    def test_manifest_declared_test_command_rejects_nul(self):
+        manifest = dict(VALID_MANIFEST, tests=[{"command": ["python3", "bad\x00arg"]}])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "command must not contain NUL characters"))
+
     def test_no_frontmatter(self):
         (self.root / "SKILL.md").write_text("# No frontmatter here\n", encoding="utf-8")
         errors = skill_validator.validate(self.root, run_tests=False)
@@ -255,6 +268,13 @@ class SkillValidatorTests(unittest.TestCase):
         (self.root / "scripts" / "test_ok.py").write_text(FAILING_TEST, encoding="utf-8")
         errors = skill_validator.validate(self.root, run_tests=True)
         self.assertTrue(has(errors, "tests[0] failed"))
+
+    def test_declared_test_startup_errors_are_caught(self):
+        for exc in (OSError("cannot execute"), ValueError("embedded null byte")):
+            with self.subTest(exception=type(exc).__name__):
+                with patch.object(skill_validator.subprocess, "run", side_effect=exc):
+                    errors = skill_validator.validate(self.root, run_tests=True)
+                self.assertTrue(has(errors, "tests[0] could not start"))
 
     def test_no_tests_flag_skips_declared_tests(self):
         (self.root / "scripts" / "test_ok.py").write_text(FAILING_TEST, encoding="utf-8")

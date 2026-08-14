@@ -136,7 +136,7 @@ def validate(teardown_root: Path, planning_document: Path) -> list[str]:
     text = read_text(planning_document, "planning document", errors)
     if teardown is None:
         return errors
-    if teardown.get("schema_version") not in {1, 2, 3}:
+    if teardown.get("schema_version") not in (1, 2, 3):
         errors.append("teardown findings.json schema_version must be 1, 2, or 3")
     findings = teardown_index(teardown, errors)
 

@@ -8,9 +8,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from render_revision_views import render_implementation_ledger, render_readme
-from validation_common import canonical_digest
+from validation_common import canonical_digest, harden_json, load_object
 from validate_revision import validate
 
 
@@ -272,6 +273,52 @@ class RevisionValidatorTests(unittest.TestCase):
 
     def test_valid_partial_revision_passes(self):
         self.assertEqual([], validate(self.teardown_root, self.revision_root))
+
+    def test_load_object_rejects_non_object_before_hardening(self):
+        path = self.root / "array.json"
+        path.write_text("[]", encoding="utf-8")
+        errors: list[str] = []
+        with patch("validation_common.harden_json") as harden:
+            self.assertIsNone(load_object(path, "array", errors))
+        harden.assert_not_called()
+        self.assertEqual(["array must contain an object"], errors)
+
+    def test_load_object_catches_recursion_errors_from_both_stages(self):
+        path = self.root / "object.json"
+        path.write_text("{}", encoding="utf-8")
+        for target in ("validation_common.json.loads", "validation_common.harden_json"):
+            with self.subTest(target=target):
+                errors: list[str] = []
+                with patch(target, side_effect=RecursionError("too deep")):
+                    self.assertIsNone(load_object(path, "object", errors))
+                self.assertTrue(any("cannot read object: too deep" in error for error in errors))
+
+    def test_hardened_containers_keep_value_equality_and_are_unhashable(self):
+        left = harden_json({"value": [1, {"nested": True}]})
+        right = harden_json({"value": [1, {"nested": True}]})
+        self.assertEqual(left, right)
+        with self.assertRaises(TypeError):
+            hash(left["value"])
+        with self.assertRaises(TypeError):
+            hash(left["value"][1])
+
+    def test_unhashable_scalar_candidates_are_reported_not_raised(self):
+        revision = copy.deepcopy(self.revision)
+        revision["revision_status"] = []
+        record = revision["findings"][1]
+        record["approval"] = {}
+        record["revalidation"] = []
+        record["disposition"] = []
+        record["acceptance_results"] = [
+            {"criterion": {}, "status": [], "evidence": "Evidence"}
+        ]
+        (self.revision_root / "revision.json").write_text(
+            json.dumps(revision, indent=2), encoding="utf-8"
+        )
+        errors = validate(self.teardown_root, self.revision_root)
+        self.assertTrue(any("revision_status must be complete" in error for error in errors))
+        self.assertTrue(any("invalid approval" in error for error in errors))
+        self.assertTrue(any("acceptance criterion 1 must be a non-empty string" in error for error in errors))
 
     def test_missing_required_file_fails(self):
         (self.revision_root / "02-execution-plan.md").unlink()

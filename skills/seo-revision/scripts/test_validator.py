@@ -9,6 +9,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from render_revision import render_to_disk
 from validate_seo_revision import AUTHORITY_IDS, locate_seo_teardown, validate
@@ -24,7 +25,7 @@ def locate_seo_teardown_fixture() -> Path | None:
     silently skipping every case. This does not relax any production rule.
     """
     installed = locate_seo_teardown()
-    if installed is not None:
+    if installed is not None and (installed / "scripts" / "test_validator.py").is_file():
         return installed
     sibling = Path(__file__).resolve().parents[2] / "seo-teardown"
     if (sibling / "SKILL.md").is_file() and (sibling / "scripts" / "test_validator.py").is_file():
@@ -49,6 +50,18 @@ UPSTREAM = load_upstream_fixture_module()
 # Resolved seo-teardown skill root, passed explicitly to validate() so the
 # suite does not depend on an installed skill being present.
 SEO_TEARDOWN_SKILL = locate_seo_teardown_fixture()
+
+
+class FixtureLocationTests(unittest.TestCase):
+    def test_installed_skill_without_fixture_module_falls_back_to_sibling(self):
+        with tempfile.TemporaryDirectory() as temp:
+            installed = Path(temp) / "seo-teardown"
+            (installed / "scripts").mkdir(parents=True)
+            (installed / "SKILL.md").write_text("---\nname: seo-teardown\n---\n", encoding="utf-8")
+            (installed / "scripts" / "validate_seo_teardown.py").write_text("", encoding="utf-8")
+            with patch(f"{__name__}.locate_seo_teardown", return_value=installed):
+                resolved = locate_seo_teardown_fixture()
+        self.assertEqual(Path(__file__).resolve().parents[2] / "seo-teardown", resolved)
 
 
 def evidence(

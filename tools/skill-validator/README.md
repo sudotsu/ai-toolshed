@@ -15,14 +15,14 @@ and so on) remain bundled and self-contained.
 ## Usage
 
 ```bash
-# Validate every bundled skill (defaults to ../../.claude/skills)
+# Validate every bundled skill (defaults to ../../skills)
 python3 tools/skill-validator/skill_validator.py
 
 # Validate specific skills
-python3 tools/skill-validator/skill_validator.py .claude/skills/seo-teardown
+python3 tools/skill-validator/skill_validator.py skills/seo-teardown
 
 # Validate every skill under a root directory
-python3 tools/skill-validator/skill_validator.py .claude/skills
+python3 tools/skill-validator/skill_validator.py skills/
 
 # Skip the (slower) declared regression tests
 python3 tools/skill-validator/skill_validator.py --no-tests
@@ -93,11 +93,12 @@ For each skill, in order:
 ### Frontmatter key policies
 
 - `name-description-only` — the frontmatter may contain *only* `name` and
-  `description`. This is the strictest policy and what the bundled teardown and
-  revision skills use.
+  `description`. This is the strictest policy.
 - `claude-standard` — the frontmatter may use any subset of this allowlist:
   `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`.
-  Use this when a skill legitimately needs one of the optional keys.
+  Use this when a skill legitimately needs one of the optional keys. All bundled
+  manifests, including the teardown and revision skills, currently select this
+  policy.
 
 In both policies `name` and `description` are required, and the length,
 kebab-case, and angle-bracket rules always apply.

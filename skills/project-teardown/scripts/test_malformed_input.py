@@ -79,7 +79,8 @@ class MalformedInputTests(unittest.TestCase):
     def _fixture(self) -> Path:
         from test_validate_teardown import TeardownValidatorTests as _T
         case = _T(methodName=next(m for m in dir(_T) if m.startswith("test_")))
-        case.setUp(); self.addCleanup(case.tearDown)
+        case.setUp()
+        self.addCleanup(case.tearDown)
         return Path(case.root)
 
     def _sweep(self) -> dict[str, tuple[str, str]]:
