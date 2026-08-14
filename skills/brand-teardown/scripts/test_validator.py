@@ -14,7 +14,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from render_handoff import render_to_disk
+from render_handoff import render_findings, render_sequence, render_to_disk
 from validate_brand_teardown import ACCESS_CATEGORIES, MODULE_FACETS, MODULE_IDS, NARRATIVE_FILES, NARRATIVE_SECTIONS, validate
 
 
@@ -612,6 +612,47 @@ class BrandValidatorTests(unittest.TestCase):
             path = root / "09-findings-register.md"
             path.write_text(path.read_text(encoding="utf-8") + "drift\n", encoding="utf-8")
             self.assertTrue(any("disagrees with canonical JSON" in error for error in validate(root)))
+
+    def test_malformed_input_reports_instead_of_crashing(self) -> None:
+        """Renderers must survive malformed JSON so the validator can report it.
+
+        Each case previously raised TypeError or AttributeError, which aborted the
+        run before any error summary reached the user.
+        """
+        cases = {
+            "unhashable evidence id": (
+                render_findings,
+                {"evidence_sources": [{"id": ["EVID-001"]}], "findings": []},
+            ),
+            "implementation is a list": (
+                render_sequence,
+                {
+                    "findings": [{"id": "F-1", "implementation": []}],
+                    "implementation": {"phases": [{"phase_id": "P1", "finding_ids": ["F-1"]}]},
+                },
+            ),
+            "implementation is null": (
+                render_sequence,
+                {"findings": [{"id": "F-1", "implementation": None}], "implementation": {"phases": []}},
+            ),
+            "order is not an integer": (
+                render_sequence,
+                {"findings": [{"id": "F-1", "implementation": {"order": "first"}}], "implementation": {"phases": []}},
+            ),
+            "finding is not an object": (
+                render_sequence,
+                {"findings": ["not-an-object"], "implementation": {"phases": []}},
+            ),
+        }
+        for label, (renderer, payload) in cases.items():
+            with self.subTest(case=label):
+                self.assertIsInstance(renderer(payload), str)
+
+    def test_non_string_evidence_id_is_reported(self) -> None:
+        self.assert_invalid(
+            lambda f, c: f["evidence_sources"][0].update({"id": ["EVID-001"]}),
+            "id",
+        )
 
 
 if __name__ == "__main__":

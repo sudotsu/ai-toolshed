@@ -23,6 +23,16 @@ def mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def order_key(finding: Any) -> int:
+    """Sort key for implementation order that tolerates malformed input.
+
+    A finding whose implementation or order is missing or wrong-typed sorts
+    first rather than crashing the renderer; the validator reports it.
+    """
+    order = mapping(mapping(finding).get("implementation")).get("order", 0)
+    return order if isinstance(order, int) and not isinstance(order, bool) else 0
+
+
 def load_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -62,7 +72,13 @@ def header(title: str) -> list[str]:
 
 
 def render_findings(data: dict[str, Any]) -> str:
-    evidence = {item.get("id"): item for item in data.get("evidence_sources", []) if isinstance(item, dict)}
+    # Only string IDs may be used as dict keys; an unhashable id would crash the
+    # renderer before the validator can report it.
+    evidence = {
+        item["id"]: item
+        for item in data.get("evidence_sources", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
     findings = sorted(data.get("findings", []), key=lambda item: item.get("id", ""))
     lines = header("Brand findings register")
     lines.extend(["`findings.json` is authoritative.", ""])
@@ -198,7 +214,11 @@ def render_decisions(data: dict[str, Any]) -> str:
 
 
 def render_sequence(data: dict[str, Any]) -> str:
-    finding_map = {item.get("id"): item for item in data.get("findings", []) if isinstance(item, dict)}
+    finding_map = {
+        item["id"]: item
+        for item in data.get("findings", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
     audit = data.get("audit", {})
     lines = header("Dependency-aware implementation sequence")
     lines.extend(
@@ -224,7 +244,7 @@ def render_sequence(data: dict[str, Any]) -> str:
             ]
         )
         phase_findings = [finding_map[fid] for fid in phase.get("finding_ids", []) if fid in finding_map]
-        phase_findings.sort(key=lambda item: item.get("implementation", {}).get("order", 0))
+        phase_findings.sort(key=lambda item: order_key(item))
         for finding in phase_findings:
             implementation = mapping(finding.get("implementation"))
             lines.append(
@@ -235,7 +255,7 @@ def render_sequence(data: dict[str, Any]) -> str:
             )
         lines.append("")
     lines.extend(["## Complete finding ledger", ""])
-    ordered = sorted(finding_map.values(), key=lambda item: item.get("implementation", {}).get("order", 0))
+    ordered = sorted(finding_map.values(), key=order_key)
     for finding in ordered:
         impl = mapping(finding.get("implementation"))
         lines.append(f"- {finding.get('id')} — phase {impl.get('phase_id')}, order {impl.get('order')}, disposition {impl.get('disposition')}")
@@ -337,7 +357,11 @@ def render_coverage(coverage: dict[str, Any], findings: dict[str, Any]) -> str:
 
 
 def render_claims(data: dict[str, Any]) -> str:
-    evidence = {item.get("id"): item for item in data.get("evidence_sources", []) if isinstance(item, dict)}
+    evidence = {
+        item["id"]: item
+        for item in data.get("evidence_sources", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
     lines = header("Brand claim inventory")
     lines.extend(["`findings.json` is authoritative.", "", "| Claim | Brand | Type | State | Risk | Surfaces | Audiences | Evidence | Owner | Required action | Verification |", "|---|---|---|---|---|---|---|---|---|---|---|"])
     for claim in sorted(data.get("claims", []), key=lambda item: item.get("id", "")):
