@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brand Teardown"
+  short_description: "Evidence-led brand identity and trust audit"
+  default_prompt: "Use $brand-teardown to perform a read-only, implementation-ready audit of this project’s positioning, trust, identity, messaging, and channel expression."

@@ -1,9 +1,26 @@
 # Teardown Report Contract
 
-Create the following folder. Add a specialized file only when the project warrants it; keep the numbered core files stable for the implementation handoff.
+## Contents
+
+1. Required folder and source-of-truth rules
+2. Executive verdict
+3. Product and market
+4. User experience
+5. Technical audit
+6. Security and reliability
+7. Canonical findings and generated register
+8. Implementation sequence
+9. Review coverage
+10. Claims inventory
+11. Final integrity pass
+
+## 1. Required folder and source-of-truth rules
+
+Create this structure. Additional evidence or domain-specific artifacts may be added, but these files are mandatory for new schema-version-3 reports.
 
 ```text
 project-teardown/
+├── README.md
 ├── 00-executive-verdict.md
 ├── 01-product-and-market.md
 ├── 02-user-experience.md
@@ -12,76 +29,126 @@ project-teardown/
 ├── 05-findings-register.md
 ├── 06-implementation-sequence.md
 ├── 07-review-coverage.md
+├── 08-claims-inventory.md
 ├── findings.json
 └── evidence/
 ```
 
-Keep evidence compact and safe. Store screenshots, sanitized logs, command results, benchmark notes, and other supporting artifacts in `evidence/`. Never copy secrets or sensitive user data.
+`findings.json` is the canonical findings source. Do not manually maintain duplicate finding records. Generate `05-findings-register.md` and `README.md` after the final JSON edit:
 
-## 00 — Executive verdict
+```bash
+python3 <skill-directory>/scripts/render_findings.py <project-teardown-directory>
+python3 <skill-directory>/scripts/render_readme.py <project-teardown-directory>
+```
+
+The validator requires exact generated output for schema version 3. This preserves the full implementation contract while removing redundant manual authoring and hand-calculated digests.
+
+Keep evidence compact and safe. Store screenshots, sanitized logs, command results, benchmark notes, network summaries, and other supporting artifacts in `evidence/`. Never copy secrets, unredacted private data, session cookies, or production dumps.
+
+New reports use `findings.json` schema version 3. The validator continues to read legacy schema versions 1 and 2 so previously validated teardowns can still feed `project-revision`.
+
+## 2. `00-executive-verdict.md`
 
 Include:
 
-- `**Review status:** complete` or `**Review status:** provisional` near the top.
-- Product thesis, intended users, and maturity.
-- Plain-language overall verdict.
-- Current trajectory: leading, competitive, catching up, undifferentiated, outdated, or heading for a wall, with qualifications.
-- Strongest qualities worth preserving.
-- Critical blockers and highest-leverage opportunities.
-- Best-in-class gap and realistic solo-builder ceiling.
-- Decisions required from the owner.
-- Review scope, environment, research date, limitations, and material assumptions.
+- `**Review status:** complete` or `**Review status:** provisional` near the top;
+- product thesis, intended users, maturity, and audited revision;
+- plain-language overall verdict;
+- current trajectory: leading, competitive, catching up, undifferentiated, outdated, or heading for a wall, with qualifications;
+- strongest qualities worth preserving;
+- critical blockers and highest-leverage opportunities;
+- best-in-class gap and realistic owner/team ceiling;
+- owner decisions required;
+- review scope, environment, research date, limitations, and material assumptions.
 
-Use `provisional` whenever a defining workflow, required platform, or evidence source remains blocked strongly enough that it could materially change the verdict. State exactly what would complete the review.
+Use `provisional` whenever a defining workflow or required evidence source remains blocked, partial, or untested strongly enough to change the verdict or plan. State exactly what would complete the review.
 
-## 01 — Product and market
+A confirmed defect may remain conclusive even when an adjacent production transport or third-party operation is unverified. Do not blur those facts. Use the finding and coverage verification states to distinguish them.
 
-Include benchmarks and why they were selected, current landscape evidence, feature-value analysis, strategic classifications, contradictions, differentiation, missing capabilities, questionable or obsolete capabilities, and consequences of changing versus retaining each major direction.
+## 3. `01-product-and-market.md`
 
-## 02 — User experience
+Include benchmark selection and rationale, current landscape evidence, product thesis, feature-value analysis, strategic classifications, contradictions, differentiation, missing capabilities, questionable or obsolete capabilities, business/adoption constraints, and consequences of changing versus retaining each major direction.
 
-Map tested journeys and document onboarding, information architecture, interaction quality, content, visual system, responsiveness or terminal ergonomics, accessibility, feedback states, recovery, trust, and user-visible performance. Include passed checks and preserved strengths.
+Separate sourced market evidence from inference. Date version-sensitive research.
 
-## 03 — Technical audit
+## 4. `02-user-experience.md`
 
-Cover architecture, correctness, maintainability, dependencies, performance, state and data behavior, tests, build and delivery, configuration, observability, documentation, and platform-specific implementation quality. Tie conclusions to runtime evidence and source locations.
+Map tested journeys and document onboarding, information architecture, interaction quality, content, visual system, responsiveness or terminal ergonomics, accessibility, feedback states, recovery, trust, user-visible performance, and conversion or completion paths. Include passed checks and preserved strengths.
 
-## 04 — Security and reliability
+Distinguish behaviorally tested surfaces from screenshots, source-only inspection, or assumptions.
 
-Cover threat-relevant surfaces, secret and data handling, authentication and authorization when applicable, unsafe defaults, dependency exposure, failure containment, recovery, portability, and operational risks. State whether findings are confirmed, likely, or require specialized testing. Do not imply that a teardown is a formal penetration test or compliance certification.
+## 5. `03-technical-audit.md`
 
-## 05 — Findings register
+Cover architecture, correctness, maintainability, dependencies, performance, resource limits, state and data behavior, concurrency, tests, build and delivery, configuration, observability, documentation, packaging, and platform-specific implementation quality. Tie conclusions to runtime evidence and source locations.
 
-This is the authoritative inventory. Give every finding a stable ID using a category prefix and number, such as `UX-001`, `TECH-004`, `SEC-002`, or `PROD-003`.
+## 6. `04-security-and-reliability.md`
 
-Use one heading and one field per line. Do not combine fields. For every finding include:
+Cover threat-relevant surfaces, secret and data handling, authentication and authorization when applicable, unsafe defaults, trust boundaries, scope and egress, dependency exposure, failure containment, recovery, portability, destructive behavior, and operational risks.
 
-- `## <ID> — <Title>`
-- **Type:** defect, shortcoming, recommendation, opportunity, investigation, or strength
-- **Category:** concise free-text category
-- **Severity:** critical, high, medium, low, or informational
-- **Confidence:** confirmed, high, medium, or low
-- **Status:** open, blocked, decision-required, or accepted-risk
-- **Impact:** user or business impact
-- **Evidence:** evidence and reproduction
-- **Expected behavior:** expected behavior, or `Not applicable — <reason>`
-- **Actual behavior:** actual behavior, or `Not applicable — <reason>`
-- **Root cause:** confirmed cause or explicitly labeled leading hypothesis
-- **Affected components:** files, symbols, workflows, or components
-- **Recommendation:** proposed response
-- **If implemented:** benefits, costs, tradeoffs, and new risks
-- **If unchanged:** consequences and opportunity cost
-- **Dependencies:** prerequisites or `None`
-- **Dependents:** downstream finding IDs or `None`
-- **Conflicts:** incompatible findings or decisions, or `None`
-- **Acceptance criteria:** observable completion conditions
-- **Verification:** verification method
-- **Estimated scope:** trivial, small, medium, large, or initiative
-- **Regression risk:** low, medium, or high
-- **Action:** fix, add, change, remove, investigate, decide, or retain
-- **Strategic classification:** old news, contradictory, demand-misaligned, ahead of the curve, one change from ahead, heading for a wall, or `Not applicable — <reason>`
+State whether each conclusion is confirmed, likely, inferred, or requires specialized testing. Do not imply that a product teardown is a formal penetration test, legal opinion, safety certification, or compliance audit.
 
-Every field is required. Use `None` or `Not applicable — <reason>` rather than omitting fields. Keep the controlled values exact so the handoff can be checked mechanically.
+## 7. Canonical findings and generated register
+
+### `findings.json`
+
+New reports use this exact top-level shape:
+
+```json
+{
+  "schema_version": 3,
+  "project": "owner/project or project name",
+  "audited_revision": "immutable revision or explicit working-tree state",
+  "review_status": "complete",
+  "core_workflows_fully_exercised": true,
+  "generated_at": "ISO-8601 timestamp",
+  "findings": []
+}
+```
+
+Give every finding exactly these keys:
+
+```text
+id, title, type, category, severity, confidence, verification_state, status,
+impact, evidence, expected_behavior, actual_behavior, root_cause,
+affected_components, recommendation, if_implemented, if_unchanged,
+dependencies, dependents, conflicts, acceptance_criteria, verification,
+estimated_scope, regression_risk, action, strategic_classification
+```
+
+Controlled values:
+
+- `type`: `defect`, `shortcoming`, `recommendation`, `opportunity`, `investigation`, `strength`
+- `severity`: `critical`, `high`, `medium`, `low`, `informational`
+- `confidence`: `confirmed`, `high`, `medium`, `low`
+- `verification_state`: `behaviorally-verified`, `defect-conclusively-demonstrated`, `operationally-unverified`, `partially-verified`, `source-only`, `research-verified`, `owner-provided`, `blocked`, `not-applicable`
+- `status`: `open`, `blocked`, `decision-required`, `accepted-risk`, `retained`
+- `estimated_scope`: `trivial`, `small`, `medium`, `large`, `initiative`
+- `regression_risk`: `low`, `medium`, `high`
+- `action`: `fix`, `add`, `change`, `remove`, `investigate`, `decide`, `retain`
+
+The two evidence dimensions are intentionally separate:
+
+- `confidence` states how strongly the finding itself is supported.
+- `verification_state` states what kind of verification was actually achieved.
+
+Examples:
+
+- A fake success screen reproduced in a browser can be `confirmed` and `defect-conclusively-demonstrated`, while production email routing remains a separate `operationally-unverified` or `blocked` investigation.
+- A source-inspected platform branch can be high confidence but `source-only`.
+- A successful real-user workflow can be `behaviorally-verified`.
+
+Requirements:
+
+- Store `evidence` as an array of objects with exactly `kind`, `source`, `location`, and `claim` non-empty strings.
+- Store `affected_components`, `dependencies`, `dependents`, `conflicts`, `acceptance_criteria`, and `strategic_classification` as arrays of unique non-empty strings. Use an empty array when none apply.
+- Use only registered finding IDs in relationship arrays.
+- `dependencies` are prerequisites of the current finding; `dependents` are exact reverse links.
+- Keep dependency/dependent links exact, conflicts symmetric, and the dependency graph acyclic.
+- A decision may be a dependency; phase membership is not.
+- A `strength` uses informational severity, retained status, and retain action.
+- Status `decision-required` and action `decide` must occur together.
+- A confirmed finding requires at least one evidence item.
+- Critical severity requires confirmed or high confidence, non-empty evidence, catastrophic impact, and a realistic trigger.
 
 Severity definitions:
 
@@ -89,90 +156,147 @@ Severity definitions:
 - **High:** Major user harm, core-workflow failure, serious security or reliability exposure, or a strategic issue likely to defeat the product's purpose.
 - **Medium:** Meaningful degradation, recurring friction, maintainability risk, or a material missed opportunity without immediate existential impact.
 - **Low:** Bounded quality, polish, consistency, or edge-case issue worth resolving.
-- **Informational:** Observation, passed check, strength to preserve, or context that affects later decisions but requires no direct fix.
+- **Informational:** Passed check, retained strength, or context that affects later decisions but requires no direct fix.
 
 Do not use estimated scope as a proxy for severity.
 
-Use critical only when evidence confirms, or supports with high confidence, both catastrophic impact and a realistic trigger. A missing boundary, theoretical bypass, or unproven exploit path is not automatically critical. Explain any critical rating in the impact and evidence fields.
+The bundled `references/schemas/findings.schema.json` is an editor/interoperability schema. The Python validator remains normative because it enforces graph, coverage, claims, generated-view, and cross-file rules.
 
-## findings.json — Machine handoff
+### `05-findings-register.md`
 
-Make `findings.json` the machine-readable mirror of `05-findings-register.md`. Use this exact top-level shape:
+This is the generated human-readable view of `findings.json`, not a second manually authored source of truth.
 
-```json
-{
-  "schema_version": 1,
-  "project": "owner/project or project name",
-  "audited_revision": "immutable revision or explicit working-tree state",
-  "review_status": "complete",
-  "generated_at": "ISO-8601 timestamp",
-  "findings": []
-}
+Generate it with `scripts/render_findings.py`. The renderer includes every field, complete evidence summaries, and the SHA-256 digest of each canonical finding object. Manual edits are rejected because they would reintroduce drift.
+
+### `README.md`
+
+This is the generated entry point. It identifies the project, revision, review status, finding counts, highest-priority findings, reading order, and validation commands. Generate it with `scripts/render_readme.py`.
+
+## 8. `06-implementation-sequence.md`
+
+Create an ordered, dependency-aware plan rather than copying severity order. Include:
+
+1. decisions and investigations that unblock planning;
+2. safety, data integrity, and foundational fixes;
+3. root causes that unblock or supersede downstream findings;
+4. core workflow and high-severity improvements;
+5. product and UX changes;
+6. lower-severity refinements and cleanup;
+7. deferred initiatives, retained strengths, and explicit accepted risks.
+
+For each phase list finding IDs, rationale, prerequisites, parallelizable groups, conflicts, validation gates, and expected user/business outcome. Explicitly note findings superseded by another change.
+
+End with this exact section and table:
+
+```markdown
+## Coverage ledger
+
+| Sequence | Finding ID | Planned disposition | Prerequisites | Rationale |
+| --- | --- | --- | --- | --- |
+| 1 | PROD-001 | decide | None | ... |
 ```
 
-Give every finding these keys:
+List every finding exactly once in executable order, whether scheduled, deferred, retained, or accepted. Every dependency must occur earlier than its dependent.
+
+## 9. `07-review-coverage.md`
+
+Start with:
 
 ```text
-id, title, type, category, severity, confidence, status, impact,
-evidence, expected_behavior, actual_behavior, root_cause,
-affected_components, recommendation, if_implemented, if_unchanged,
-dependencies, dependents, conflicts, acceptance_criteria, verification,
-estimated_scope, regression_risk, action, strategic_classification
+**Review status:** complete
+**Core workflows fully exercised:** yes
+**Validator status:** passed
 ```
 
-- Use the same controlled lowercase values defined for the Markdown register.
-- Store `evidence` as an array of objects with `kind`, `source`, `location`, and `claim` strings.
-- Store `affected_components`, `dependencies`, `dependents`, `conflicts`, `acceptance_criteria`, and `strategic_classification` as arrays of strings. Use an empty array when none apply.
-- Use only registered finding IDs in relationship arrays.
-- Define `dependencies` as prerequisites of the current finding and `dependents` as the exact reverse links. Keep both directions consistent.
-- Keep the graph acyclic. A decision may be a dependency; phase membership is not.
-- Keep Markdown and JSON titles, controlled fields, relationships, and finding counts identical.
+### `## Surface coverage`
 
-## 06 — Implementation sequence
+Use this exact schema-version-3 table header:
 
-Create an ordered, dependency-aware plan rather than copying the severity sort. Include:
+```markdown
+| Surface | Importance | Status | Verification class | Evidence level | Evidence | Limitations | Next step |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+```
 
-1. Decisions and investigations that unblock planning.
-2. Safety, data integrity, and foundational fixes.
-3. Root causes that unblock or supersede downstream findings.
-4. Core workflow and high-severity improvements.
-5. Product and UX changes.
-6. Lower-severity refinements and cleanup.
-7. Deferred initiatives and explicit accepted risks.
+Importance values: `defining`, `required`, `major`, `supporting`, `research`.
 
-For each phase list finding IDs, rationale, prerequisites, parallelizable groups, conflicts, validation gates, and expected user or business outcome. Explicitly note findings superseded by another change.
+Status values: `passed`, `failed`, `partial`, `blocked`, `not-tested`, `not-applicable`.
 
-End with a coverage ledger listing every finding ID exactly once in executable order, whether scheduled, deferred, or accepted. Every dependency must occur earlier than its dependent. This prevents low-severity work from disappearing and gives the implementation skill a valid starting order.
+Verification classes: `behaviorally-verified`, `defect-conclusively-demonstrated`, `operationally-unverified`, `partially-verified`, `source-only`, `research-verified`, `owner-provided`, `blocked`, `not-applicable`.
 
-## 07 — Review coverage
+Evidence levels: `behavioral`, `test`, `build-only`, `source-only`, `research`, `owner-provided`, `mixed`, `none`.
 
-Make review completeness explicit and auditable. Include:
+Use the status and verification class together. A surface can be `failed` and `defect-conclusively-demonstrated`; a different operational surface can remain `not-tested` and `operationally-unverified`. Do not collapse both into a vague partial statement.
 
-- `**Review status:** complete` or `**Review status:** provisional`.
-- `**Core workflows fully exercised:** yes` or `**Core workflows fully exercised:** no`.
-- A surface coverage matrix with columns: surface, importance, status, evidence, limitations, and next step.
-- Allowed coverage statuses: passed, failed, partial, blocked, not-tested, or not-applicable.
-- Every defining workflow, supported platform, major feature, quality domain, and material research question.
-- Blocked or unverified work and exactly what would unblock it.
-- A narrative reconciliation table mapping every report subsection containing actionable observations to finding IDs, or explaining why its observations are passed checks, limitations, deferred, or non-actionable context.
-- Counts by finding severity, status, type, and action.
-- The teardown validator command and result.
+Include every defining workflow, supported platform/runtime/provider, major feature, quality domain, destructive boundary, and material research question. State exactly what would unblock blocked or unverified work.
 
-The status in this file must match `00-executive-verdict.md`. If core workflows are not fully exercised, the review status must be provisional.
+A complete review requires every defining and required row to be `passed` or specifically justified `not-applicable`.
 
-## Final integrity pass
+### `## Narrative reconciliation`
+
+Use this table header:
+
+```markdown
+| Report section | Classification | Finding IDs | Rationale |
+| --- | --- | --- | --- |
+```
+
+Include at least one row for each numbered narrative file `01` through `04`. Classification values: `actionable`, `passed-check`, `limitation`, `deferred`, `context`, or `mixed`.
+
+Every actionable row must contain registered finding IDs. Non-actionable rows must explain why no finding is required.
+
+### `## Finding counts`
+
+Include `**Total findings:** <integer>` plus counts by severity, status, type, and action. The total must match `findings.json`.
+
+### `## Validator result`
+
+Record the exact command, timestamp, and successful output. The exact `**Validator status:** passed` marker may appear only after the project-report validator succeeds.
+
+The review status must match the executive verdict and JSON. `Core workflows fully exercised: yes` must match `core_workflows_fully_exercised: true`.
+
+## 10. `08-claims-inventory.md`
+
+Inventory every material external claim, including credentials, licensing, insurance, safety, diagnosis, expertise, guarantees, response times, pricing, performance, statistics, privacy, data handling, and product capability.
+
+Use this exact table:
+
+```markdown
+## Claims
+
+| Claim ID | Claim text | Location | Category | Required evidence | Evidence found | Verification state | Disposition | Related finding IDs | Required action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+```
+
+Claim IDs use `CLAIM-001`, `CLAIM-002`, and so on. Category values:
+
+`credential`, `licensing`, `insurance`, `safety`, `diagnosis`, `expertise`, `guarantee`, `pricing`, `performance`, `statistics`, `privacy`, `capability`, `other`.
+
+Verification states:
+
+`verified`, `unsupported`, `contradicted`, `partially-verified`, `blocked`, `not-applicable`.
+
+Dispositions:
+
+`retain`, `qualify`, `remove`, `replace`, `investigate`, `owner-decision`, `not-applicable`.
+
+Every unsupported, contradicted, partially verified, or blocked claim must map to at least one finding. A claim can be retained only when verified. If the project genuinely makes no material external claims, include one explicit `CLAIM-000` not-applicable row rather than omitting the artifact.
+
+## 11. Final integrity pass
 
 Before delivery:
 
-1. Read every narrative section again.
-2. Give every actionable defect, shortcoming, recommendation, opportunity, and investigation exactly one finding ID.
-3. Confirm every finding ID appears exactly once in the implementation coverage ledger.
-4. Confirm no ledger ID is absent from the findings register.
-5. Confirm every required finding field is present, even when its value is `None` or `Not applicable — <reason>`.
-6. Confirm the coverage matrix exposes every blocked, partial, untested, and unsupported surface.
-7. Confirm a blocked defining workflow produces a provisional verdict.
-8. Run the bundled validator and record its successful result.
-9. Confirm the JSON and Markdown registers match.
-10. Confirm the dependency graph has no cycle and every prerequisite precedes its dependent in the ledger.
-11. Recheck every critical rating against the critical-severity definition.
-12. Confirm no actionable UX, accessibility, onboarding, delivery, or polish item was dismissed merely because it is low severity.
+1. Re-read every narrative section.
+2. Give every actionable defect, shortcoming, recommendation, opportunity, investigation, and unresolved material claim exactly one finding ID.
+3. Confirm every finding appears exactly once in the implementation coverage ledger.
+4. Confirm dependencies, reverse dependents, conflicts, and sequence order are valid and acyclic.
+5. Confirm each finding's confidence and verification state describe different dimensions accurately.
+6. Confirm the coverage matrix distinguishes conclusive defect evidence from unverified operations.
+7. Confirm the claims inventory includes all material claims and maps every unresolved claim to findings.
+8. Confirm narrative reconciliation covers `01` through `04` and maps all actionable statements.
+9. Confirm blocked or unexercised defining/required surfaces produce a provisional verdict.
+10. Recheck every critical rating against the critical definition.
+11. Confirm no low-severity UX, accessibility, onboarding, delivery, reliability, or polish item disappeared merely because it was low severity.
+12. Generate `05-findings-register.md` and `README.md` from the final JSON.
+13. Run the project-report validator and record success.
+14. Manually verify substantive completeness after structural validation.
+15. Confirm no product source or pre-existing user work was modified by the teardown.

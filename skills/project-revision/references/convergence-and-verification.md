@@ -7,8 +7,9 @@ Use this reference after implementation planning and whenever a follow-up review
 1. Convergence loop
 2. Review-source coverage
 3. Risk-triggered verification
-4. Readiness decisions
-5. Finalization sequence
+4. Test and verification integrity
+5. Readiness decisions
+6. Finalization sequence
 
 ## 1. Convergence loop
 
@@ -79,7 +80,23 @@ For platform matrices, distinguish:
 
 Report the strongest level achieved for each platform. Do not summarize all four as “platform tested.”
 
-## 4. Readiness decisions
+
+## 4. Test and verification integrity
+
+Do not weaken assertions, remove failure-path coverage, increase timeouts without evidence, mock away the behavior under review, or narrow the supported matrix merely to make checks pass. A test change is valid only when current product requirements or a corrected test premise justify it. Record the old premise, new premise, and evidence.
+
+For every implemented or fixed finding:
+
+- prefer a reproducing regression test before or alongside the fix when feasible;
+- verify the behavior at the lowest useful level and through the defining user workflow;
+- keep deterministic fault seams for timeouts, races, I/O failures, cancellation, cleanup, and external protocol errors;
+- execute platform-specific branches on the actual platform or a faithful environment;
+- rerun from a clean install/build state when packaging, dependency, generated-output, or environment behavior changed;
+- inspect skipped, quarantined, retried, or conditionally excluded tests as possible hidden failures.
+
+A green suite obtained by reducing meaningful coverage is a regression, not convergence.
+
+## 5. Readiness decisions
 
 Assess separately:
 
@@ -101,7 +118,7 @@ A revision is not merge-ready when any of these apply:
 
 Release readiness normally additionally requires complete revision status, release-critical live/environment evidence, accurate public claims, and required operational authorization. Merge readiness does not imply release readiness.
 
-## 5. Finalization sequence
+## 6. Finalization sequence
 
 Use the smallest applicable sequence.
 
