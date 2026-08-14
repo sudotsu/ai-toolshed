@@ -1,179 +1,231 @@
 ---
 name: project-revision
-description: Plan, implement, and converge an approved, validated project-teardown handoff against the current revision of a software project. Use when Codex must translate a teardown into an exhaustive owner decision or revision plan, resolve decisions, revalidate findings against changed code, implement approved work in dependency order, preserve existing work, review implementation-induced regressions and PR feedback, verify risk-sensitive behavior across relevant environments, and produce a current auditable implementation and readiness ledger.
+description: Revalidate, plan, implement, and converge an approved project-teardown handoff against the current state of a software project while preserving existing user work and producing an auditable decision, implementation, verification, and readiness record. Use when Codex must create an exhaustive planning-only revision document, resolve owner decisions, implement approved teardown findings in dependency order, continue an existing revision branch or PR, address reviewer feedback, verify risk-sensitive behavior across relevant environments, or prove that every teardown finding and newly discovered regression has a current disposition. Do not use without a project-teardown handoff or as permission to apply stale recommendations blindly.
 ---
 
 # Project Revision
 
-Turn a validated `project-teardown` handoff into verified project changes. Treat the teardown as evidence and a plan, not as permission to apply stale recommendations blindly. Implementation is not finished when the first test suite passes; it is finished only after an adversarial convergence pass and an honest final-state reconciliation.
+Turn a validated `project-teardown` handoff into either:
+
+1. a fully traceable planning-only artifact; or
+2. verified project changes that converge after adversarial review.
+
+Treat the teardown as evidence and a proposed plan, not as permission to apply stale recommendations. Implementation is not finished when the first test suite passes. It is finished only when approved work satisfies current acceptance criteria, pre-existing work is reconciled, the entire final diff survives convergence review, and readiness claims match verifiable facts.
 
 ## Operating contract
 
-- Preserve all pre-existing user work. Never reset, clean, checkout over, stash, discard, or silently reformat it. Do not assume an uncommitted change belongs to this run.
-- Implement only findings the owner approves. Approval covers in-repository implementation, not unrelated redesigns, destructive data operations, purchases, publication, production changes, credential changes, or external outreach.
-- Verify every finding against the current project state before changing it. Do not force a fix whose premise, affected code, or recommendation is stale.
-- Follow the teardown dependency graph. Do not implement a dependent while its prerequisite is unresolved unless the owner approves a corrected graph.
-- Search usages before changing shared code. Prefer the smallest complete change that satisfies acceptance criteria and preserves documented strengths.
-- Continue until every approved finding is implemented, already satisfied, retained, or explicitly blocked. A blocker makes the revision partial or blocked, never complete.
-- Treat review bots and reviewer prompts as leads, not proof. Revalidate them against the current head and record their dispositions.
-- Never call a revision merge-ready while a confirmed critical, high, or medium implementation or convergence defect remains unresolved.
-- Distinguish implementation status, merge readiness, release readiness, and authorization. None implies another.
-- Distinguish teardown facts, implementation recommendations, owner decisions, and newly discovered findings. A recommendation is never implicit approval.
-- Preserve every provisional limitation, blocked investigation, unexercised workflow, and required external or real-environment check as an explicit blocker or completion gate. Do not let planning prose collapse them into vague future testing.
-- Keep secrets and sensitive output out of artifacts, diffs, logs, and chat.
+- Preserve all pre-existing user work. Never reset, clean, checkout over, stash, discard, overwrite, or silently reformat it.
+- Implement only findings the owner approves. A recommendation is not approval.
+- Revalidate every finding against the current project state before changing it.
+- Follow the teardown dependency graph unless current evidence proves it wrong and the owner approves the corrected graph.
+- Search usages before changing shared code. Prefer the smallest complete vertical change, not the fewest lines.
+- Include tests, documentation, configuration, migrations, error handling, cleanup, and cross-platform behavior required by acceptance criteria. Do not use "minimal" as an excuse for incomplete work.
+- Continue until every approved finding is implemented, already satisfied, retained, or explicitly blocked. A blocker makes the run partial or blocked, never complete.
+- Treat review bots, inline comments, PR prompts, static-analysis warnings, and prior agent suggestions as leads. Revalidate every actionable lead against the current head.
+- Distinguish implementation status, convergence, merge readiness, release readiness, delivery state, and owner authorization. None implies another.
+- Preserve every provisional limitation, blocked investigation, unexercised workflow, and required real-environment check as an explicit blocker or completion gate.
+- Keep secrets, private data, and sensitive runtime output out of artifacts, diffs, logs, and chat.
+- Treat a constraint as real only when the owner stated it or an objective external fact establishes it. Never infer a quality-limiting constraint from task difficulty, elapsed effort, or inconvenience. A constraint may reduce approved scope; it does not lower execution quality for work that remains in scope.
+- Support every readiness, parity, or completion judgment with a concrete artifact: a measured output, a test or command result, an inspected competitor capability, or a produced file. Reasoning about why the work seems strong is not evidence.
 
-## 1. Establish inputs and baseline
+## 1. Select the operating mode
 
-Locate the project root and intended teardown folder. If multiple reports are plausible, ask the owner to select one. Read repository instructions before acting.
+Determine whether the request is:
 
-Read both bundled references:
+- `planning-only`: analysis, revalidation, decision packet, or revision plan without product-edit authorization;
+- `implementation`: owner-approved product changes;
+- `continuation`: continue an existing revision branch, worktree, PR, or review cycle.
 
-- `references/revision-contract.md` for artifact structure and validation.
-- `references/convergence-and-verification.md` for the adversarial review loop, risk-triggered testing, readiness rules, and commit sequencing.
+Do not infer implementation authority from a request for a plan. When the user explicitly limits edits to one document, modify only that document.
 
-Locate the installed `project-teardown` skill by `name` frontmatter and run its bundled `scripts/validate_teardown.py` against the handoff. Do not substitute another validator. Stop and report exact errors if validation fails.
+Read the relevant contracts before acting:
 
-Read the complete handoff, including `findings.json`, every numbered report, `07-review-coverage.md`, and all evidence relevant to decisions, acceptance criteria, reproduction, named product surfaces, or known limitations. Confirm Markdown, JSON, and evidence describe the same report, not merely that the validator passed. Supporting evidence can contain required subconditions that the one-line finding summary omits.
+- [planning-contract.md](references/planning-contract.md) for planning-only work;
+- [revision-contract.md](references/revision-contract.md) for implementation artifacts;
+- [preservation-and-delivery.md](references/preservation-and-delivery.md) before product edits or delivery claims;
+- [convergence-and-verification.md](references/convergence-and-verification.md) before defining verification and convergence.
 
-Capture before product edits:
+## 2. Establish inputs and baseline
 
-- current immutable revision, branch, or equivalent workspace identity;
-- staged, unstaged, and untracked paths;
-- the diff or content snapshot needed to distinguish existing work;
-- relevant toolchain versions and baseline check results;
-- existing pull request, review, CI, issue, or delivery state when in scope and accessible.
+Locate the project root and intended teardown folder. If multiple handoffs are plausible and evidence cannot select one safely, ask the owner to choose.
 
-Keep raw diagnostics in a restricted temporary location, not the repository artifact. Before editing a path with existing user changes, preserve its exact bytes and file mode for reconciliation. If approved work cannot safely combine with existing changes, stop and ask.
+Locate the installed `project-teardown` skill by `name` frontmatter and run its bundled validator against the handoff. Do not substitute another validator. Stop and report exact errors if validation fails.
 
-If the audited revision differs from the current revision, either state includes working-tree changes, or an existing implementation branch has advanced, mark the handoff drifted and fully revalidate it.
+Read the entire handoff:
 
-If the teardown is provisional, surface unresolved coverage before approval. Do not imply known fixes cover unreviewed surfaces; block any finding whose acceptance cannot be established because of the same limitation.
+- `README.md` when present, as the entry index rather than a substitute for the full handoff;
+- `findings.json`, including schema-version-3 confidence and verification-state distinctions;
+- every numbered report;
+- the complete implementation sequence and coverage ledger;
+- `07-review-coverage.md`;
+- `08-claims-inventory.md` when present, preserving every unresolved claim and related finding;
+- all evidence relevant to decisions, acceptance criteria, reproduction, named surfaces, claims, or limitations.
 
-Create `project-revision/`, or a clearly dated sibling when one already exists. Never overwrite an existing revision record without permission. New and migrated artifacts must follow schema version 2 in the revision contract.
+Do not rely on one-line finding summaries. Supporting evidence and coverage files may contain required subconditions, platform checks, owner decisions, or blocked environments.
 
-## 2. Revalidate findings and resolve decisions
+Capture the baseline using [preservation-and-delivery.md](references/preservation-and-delivery.md): immutable revision, branch, remote, staged/unstaged/untracked paths, relevant file bytes/modes, toolchain versions, baseline checks, and current PR/review/CI/delivery state.
 
-Process findings in coverage-ledger order. For each finding:
+If the audited revision differs from the current revision, either state contains working-tree changes, or the implementation branch advanced, mark the teardown drifted and revalidate every finding.
 
-1. Inspect the current workflow and all relevant usages.
-2. Re-run the reproduction or closest safe equivalent.
-3. Reassess root cause, impact, recommendation, dependencies, conflicts, acceptance criteria, and verification.
-4. Classify it as `confirmed`, `changed`, `stale`, `already-resolved`, `not-applicable`, or `blocked`.
-5. Cite current evidence and explain divergence from the teardown.
+If the teardown is provisional, surface the unresolved coverage before approval. Do not imply known fixes cover unreviewed surfaces. Block acceptance that depends on the same missing evidence.
 
-Do not edit stale or not-applicable findings. Treat already-resolved work as satisfied only after its acceptance criteria pass. If a changed finding requires materially different behavior, scope, or risk, return it to owner decision. Apply a small implementation adjustment without another question only when it preserves the approved outcome and risk profile; record it.
+## 3. Revalidate every teardown finding
 
-Build one owner decision packet before product edits. Include decision-required findings, conflicts, accepted risks, missing prerequisites, materially changed findings, and work requiring authority beyond repository edits. For each, provide concrete options, recommendation, consequences, dependencies, and default of no change.
+Process findings in coverage-ledger order. For each:
 
-Record an approval matrix covering every finding: `approved`, `deferred`, `rejected`, `accepted-risk`, or `not-applicable`. Strengths and retain actions still need explicit preservation approval. Do not start product edits while a pending decision can change the executable graph.
+1. inspect the current workflow and all relevant usages;
+2. rerun the reproduction or closest safe equivalent;
+3. reassess root cause, impact, recommendation, dependencies, conflicts, acceptance criteria, verification, and preservation requirements;
+4. classify as `confirmed`, `changed`, `stale`, `already-resolved`, `not-applicable`, or `blocked`;
+5. cite current evidence and explain divergence from the teardown.
 
-### Planning-only and decision-packet requests
+Do not edit stale or not-applicable findings. Treat already-resolved work as satisfied only after all original acceptance criteria pass. Preserve each original acceptance criterion verbatim. A non-material clarification may add a measurable verification method or evidence detail in `verification`, `notes`, or planning prose when it preserves the approved outcome, scope, authority, and risk profile. A material change to behavior, scope, authority, risk, or owner commitment returns to owner decision.
 
-When the owner requests analysis, revalidation, or a revision plan without authorizing product edits, stop after producing the requested planning artifact. Do not create an implementation ledger, claim convergence, or imply that planning exercised the skill's implementation behavior.
+Preserve the original teardown finding identity and record digest in planning and implementation artifacts. Create a new `REV-<NNN>` convergence finding only for a genuinely new defect or review lead discovered during implementation/current-head review, not for clearer wording or sequencing.
 
-Before delivering the plan, build a handoff-to-plan traceability check. Account for:
+## 4. Resolve owner decisions
 
-- every finding ID, exact disposition, dependency, acceptance criterion, and preservation action;
-- every decision, prerequisite, blocked investigation, unverified claim, provisional limitation, and unexercised core workflow from the executive verdict, coverage ledger, sequence, and evidence;
-- every affected runtime, configuration, manifest, metadata, operational-documentation, delivery, and user-facing surface named by the evidence;
-- every required live-provider, external-system, real-device, browser, platform, accessibility, security, failure-path, or production check.
+Build one decision packet before product edits. Include:
 
-Put each item in the plan as an implementation action, owner decision, explicit blocker, or observable completion gate. Use specific workflows and environments; phrases such as "test mobile," "check accessibility," or "update documentation" are insufficient when the handoff identifies concrete surfaces.
+- every decision-required finding;
+- conflicts and mutually exclusive paths;
+- accepted-risk proposals;
+- missing prerequisites or authority;
+- materially changed findings;
+- work requiring destructive data operations, purchases, credentials, publication, deployment, production changes, or external outreach.
 
-Include a delta statement that separates:
+For each decision provide concrete options, recommendation, consequences, dependencies, and default of no change.
 
-1. teardown-derived facts and recommendations translated into the plan;
-2. new implementation or sequencing recommendations from the revision pass;
-3. genuinely new findings discovered during current-state revalidation.
+Record an approval matrix covering every finding: `approved`, `deferred`, `rejected`, `accepted-risk`, or `not-applicable`. Retained strengths default to preservation and do not require a separate owner answer; record them as approved/retained after revalidation. If approved work could weaken, remove, or trade off a retained strength, elevate that specific tradeoff for explicit owner approval before editing. Do not start product edits while an unanswered decision can change the executable graph.
 
-Label agent recommendations as recommendations until the owner approves them. Preserve the teardown's provisional/final status and exact finding counts and dispositions. If no new findings exist, say so directly. A cleaner reorganization of existing evidence is not a new finding.
+Preserve owner decisions already supplied. Do not ask again, soften them into suggestions, or upgrade agent recommendations into owner-approved decisions.
 
-## 3. Plan and implement in dependency order
+A narrowly approved subset is valid. Still revalidate and record every teardown finding exactly once; mark untouched findings deferred, rejected, accepted-risk, retained, not applicable, or blocked as appropriate. Subset scope reduces implementation work, not coverage, preservation, or convergence obligations for the resulting diff.
 
-Order approved work by prerequisites, then risk reduction, then severity. Group only independent findings. Before each batch:
+## 5. Planning-only workflow
+
+When product edits are not authorized:
+
+1. revalidate current state safely;
+2. create or update only the requested planning artifact;
+3. follow [planning-contract.md](references/planning-contract.md);
+4. trace every teardown finding and every coverage/evidence condition;
+5. distinguish teardown-derived content, new implementation recommendations, and genuinely new findings;
+6. carry forward exact counts, statuses, dependencies, acceptance criteria, verification, affected surfaces, blockers, and owner decisions;
+7. state clearly that no product edits or convergence testing occurred;
+8. run `scripts/validate_revision_plan.py`.
+
+Do not create `project-revision/revision.json` or an implementation ledger for a planning-only request unless the owner explicitly asks for a separate implementation artifact.
+
+## 6. Plan implementation in dependency order
+
+For implementation or continuation mode, create `project-revision/` or a clearly dated sibling. Never overwrite an existing revision record without permission.
+
+Order approved work by prerequisites, then risk reduction, then severity and leverage. Group only truly independent findings.
+
+Before each batch:
 
 - confirm prerequisites have completed dispositions;
 - identify overlap with baseline work;
 - choose an edit strategy that preserves both intents;
-- define focused checks, regression risks, fault cases, and a rollback approach that does not discard user work.
+- define focused success checks, failure-path checks, regression risks, environment requirements, and safe rollback;
+- identify documentation, manifests, metadata, configuration, delivery, and user-facing claims that must change with the code.
 
-Implement complete vertical changes, including tests, documentation, configuration, migrations, error handling, and cleanup required by acceptance criteria. Do not broaden scope into opportunistic refactors.
+Do not broaden the batch into opportunistic refactors, formatting, dependency churn, or unrelated cleanup.
 
-When work touches destructive recovery, startup maintenance, trust boundaries, user-controlled parsing, processes, platform-specific behavior, provider protocols, or resource limits, apply the relevant fault-injection and behavioral checks from `references/convergence-and-verification.md`. A build on another platform is not behavioral platform evidence.
+## 7. Implement complete vertical changes
+
+Implement all behavior required by the approved acceptance criteria. Include tests, docs, configuration, migrations, packaging, error handling, recovery, and removal of superseded paths where required.
+
+When work touches destructive recovery, startup maintenance, trust boundaries, user-controlled parsing, processes, shell execution, provider protocols, platform-specific behavior, resource limits, persistence, or data egress, apply the relevant checks from [convergence-and-verification.md](references/convergence-and-verification.md).
 
 After each finding or coupled batch:
 
-1. Run focused verification, including failure paths.
-2. Inspect the diff and inventory against baseline.
-3. Confirm existing work remains semantically intact.
-4. Record changed files, acceptance results, evidence, and disposition.
-5. Do not mark work implemented while any required criterion fails.
+1. run focused verification, including failure paths;
+2. inspect the full batch diff against baseline;
+3. confirm pre-existing work remains semantically intact;
+4. record changed files, original acceptance criteria, current evidence, verification, and disposition;
+5. do not mark work implemented while any required criterion fails or remains unverified.
 
-If implementation disproves the plan, stop that dependency branch, diagnose, update the ledger, and request a decision only when the changed outcome is consequential.
+If implementation disproves the plan, stop the affected dependency branch, update revalidation, and obtain any newly required decision before continuing.
 
-## 4. Converge the implementation
+## 8. Converge the implementation
 
-After approved implementation, run the convergence workflow from `references/convergence-and-verification.md`.
+Read [convergence-and-verification.md](references/convergence-and-verification.md) and execute the full convergence loop.
 
 At minimum:
 
-1. Perform a fresh adversarial review of the complete product diff, emphasizing cross-finding interactions and newly shared code.
-2. Re-run affected end-to-end workflows as a user, not only unit tests.
-3. If a pull request exists and access is available, inspect current-head inline threads, top-level comments, reviews, outside-diff findings, skipped-file notices, and rate-limit or partial-review warnings.
-4. Revalidate every actionable lead. Record it in `convergence_findings` as fixed, already satisfied, invalid, open, deferred, or blocked.
-5. If a lead proves an original finding's acceptance criteria failed, reopen that original finding as well; do not hide it only in the convergence ledger.
-6. Fix confirmed in-scope defects in severity and dependency order, add regression tests, then review the resulting diff again.
-7. Repeat until no confirmed critical, high, or medium convergence defect remains unresolved.
+- review the entire baseline-to-current diff manually;
+- rerun defining workflows and relevant end-to-end paths;
+- run focused and full project checks;
+- exercise risk-triggered failure, platform, fault-injection, packaging, and external-system checks;
+- inspect current-head PR comments, reviews, CI, static analysis, and outside-diff leads when available;
+- revalidate every actionable lead against the exact current head;
+- record valid, stale, invalid, fixed, blocked, deferred, and open convergence findings;
+- repeat review after every product-code fix until no new blocking lead appears.
 
-Do not equate resolved review threads with fixed code, green CI with reviewed behavior, or bot silence with a clean review. If external review is unavailable or rate-limited, record that limitation and complete a manual full-diff review; never claim the unavailable source passed.
+A passing test suite does not prove convergence. A build on another platform does not prove platform behavior. A stale review comment does not justify a change.
 
-Low-severity findings may remain only with a recorded reason and consequence. Owner approval is required when deferral changes promised behavior or accepted risk.
+## 9. Reconcile the final state
 
-## 5. Verify and finalize
+Before any readiness or delivery claim:
 
-Run existing project checks plus the end-to-end and risk-specific workflows needed to cover cross-finding interactions. Re-run security, performance, accessibility, packaging, and platform checks whenever touched. Verify preserved strengths and accepted-risk boundaries.
+- inventory final staged, unstaged, and untracked paths;
+- map every product path to approved finding IDs, fixed convergence IDs, or preserved pre-existing work;
+- map every artifact path to revision-record maintenance;
+- investigate unexpected files, deletions, mode changes, generated output, and lockfile churn;
+- confirm all original acceptance criteria have current evidence;
+- confirm all provisional limitations and required real-environment gates remain visible;
+- refresh current-head PR, review, CI, remote, merge, release, and deployment facts;
+- give every remaining gap an explicit disposition — being fixed in this run, awaiting an owner decision, or blocked by a named cause — and carry the disposition into the artifact and the user-facing handoff. An enumerated gap list with no dispositions is a disclaimer, not a reconciliation, and does not support a completion claim.
 
-Reconcile the final product tree against baseline:
+Use [preservation-and-delivery.md](references/preservation-and-delivery.md) for honest working-tree versus artifact-only-descendant sequencing.
 
-- every new product change maps to an approved finding or confirmed convergence defect;
-- all pre-existing staged, unstaged, and untracked work remains accounted for;
-- unrelated paths remain unchanged;
-- generated files and dependency changes are intentional;
-- affected operational documentation, manifests, public metadata, configuration claims, and version facts agree with the implemented product;
-- no secret or sensitive diagnostic entered the diff.
+## 10. Produce and validate the implementation artifact
 
-When version control cannot distinguish baseline work, compare captured snapshots and state uncertainty. Never claim preservation without evidence.
+Follow [revision-contract.md](references/revision-contract.md). Copy starter files from `assets/revision-template/` when useful, then replace every placeholder.
 
-Finalize using the sequencing rules in `references/convergence-and-verification.md`. In particular, a committed artifact cannot contain its own commit hash. Record the last immutable product-code revision as `implementation_end_revision`, then place only artifact maintenance after it. If commit or push authority is absent, use an explicit working-tree state instead of inventing a revision.
-
-Complete schema-version-2 `revision.json`, then run:
+For implementation mode, treat `revision.json` as the canonical finding and convergence record. Generate the human entry point and implementation ledger before validation:
 
 ```bash
-python3 <skill-directory>/scripts/validate_revision.py <project-teardown-directory> <project-revision-directory>
+python3 <skill-directory>/scripts/render_revision_views.py <project-teardown-directory> <project-revision-directory>
 ```
 
-Fix every structural error and record the command and result. Validator success is necessary, not sufficient: manually reconcile decisions, evidence, diffs, acceptance criteria, convergence findings, review state, readiness, delivery facts, and the original findings register.
+Do not manually maintain `README.md` or `03-implementation-ledger.md`; regenerate them after every `revision.json` change.
 
-Use these status boundaries:
+Validate the requested artifact:
 
-- `complete`: every approved finding is implemented, already satisfied, or retained; required evidence passes; existing work is reconciled.
-- `partial`: useful approved work completed, but an approved finding or required verification remains blocked or failed.
-- `blocked`: no approved implementation could safely complete.
+```bash
+# Implementation mode
+python3 <skill-directory>/scripts/validate_revision.py <project-teardown-directory> <project-revision-directory>
 
-Merge-ready may be true for an honestly partial revision only when remaining limitations are non-blocking for integration, fail safely, are documented, and no blocking convergence defect remains. Release-ready normally requires a complete revision and all release-critical environment evidence. Readiness never authorizes merging or releasing.
+# Planning-only mode
+python3 <skill-directory>/scripts/validate_revision_plan.py <project-teardown-directory> <planning-document>
+```
 
-## Handoff
+Fix every artifact validation error. Skill-package validation and validator regression tests are maintenance tasks, never project-revision completion gates. Run them only when installing, packaging, or modifying the skill itself:
 
-End with:
+```bash
+python3 <skill-directory>/scripts/validate_skill_bundle.py <skill-directory> --mode installed
+python3 <skill-directory>/scripts/validate_skill_bundle.py <skill-directory> --mode package
+python3 -m unittest discover -s <skill-directory>/scripts -p 'test_*.py' -v
+```
 
-1. Revision status and immutable product-code endpoint or explicit working-tree state.
-2. Artifact relationship to that endpoint.
-3. Implemented, satisfied, retained, deferred, rejected, accepted-risk, stale, and blocked findings.
-4. Convergence findings and the sources reviewed.
-5. Checks, results, fault coverage, and unverified claims.
-6. Merge readiness, release readiness, and consequences of remaining limitations.
-7. Exact delivery facts: commit, push, pull-request update, merge, deployment, and release state.
-8. Preservation evidence and remaining uncertainty.
-9. Path to the revision artifact.
+Validator success is necessary, not sufficient. Manually inspect substantive correctness, current evidence, preservation, and convergence. A script cannot prove that a code change is correct, that an environment was genuinely exercised, or that an owner decision was understood.
 
-Do not claim a commit, push, PR update, merge, deployment, migration, publication, or production change unless explicitly authorized and verified. Do not describe a PR as current without refreshing its head, reviews, and CI state.
+If a bundled validator cannot run, do not invent a substitute or claim structural success. Report the exact blocker.
+
+## User-facing handoff
+
+State:
+
+1. operating mode and exact project/revision state;
+2. owner decisions and approved scope;
+3. what was implemented, already satisfied, retained, deferred, rejected, accepted-risk, not applicable, or blocked;
+4. verification and convergence evidence, including environment limits;
+5. preservation and changed-path reconciliation;
+6. implementation status, merge readiness, release readiness, and delivery state separately;
+7. the generated implementation `README.md` entry point and paths to the full planning or implementation artifacts;
+8. exact next action requiring the owner, external environment, credentials, review, merge, release, or deployment.
+
+Never claim a commit, push, PR update, merge, release, deployment, migration, publication, or production verification that was not directly confirmed after the final relevant change.

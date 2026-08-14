@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/project-revision/revision.schema.json",
+  "title": "Project Revision Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "teardown_path",
+    "teardown_audited_revision",
+    "implementation_start_revision",
+    "implementation_end_revision",
+    "revision_status",
+    "generated_at",
+    "existing_work_reconciled",
+    "findings",
+    "convergence_findings",
+    "final_state"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "project": {"type": "string", "minLength": 1},
+    "teardown_path": {"type": "string", "minLength": 1},
+    "teardown_audited_revision": {"type": "string", "minLength": 1},
+    "implementation_start_revision": {"type": "string", "minLength": 1},
+    "implementation_end_revision": {"type": "string", "minLength": 1},
+    "revision_status": {"enum": ["complete", "partial", "blocked"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "existing_work_reconciled": {"type": "boolean"},
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "convergence_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/convergenceFinding"}
+    },
+    "final_state": {"$ref": "#/$defs/finalState"}
+  },
+  "$defs": {
+    "nonEmptyString": {"type": "string", "minLength": 1},
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/nonEmptyString"}
+    },
+    "acceptanceResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criterion", "status", "evidence"],
+      "properties": {
+        "criterion": {"$ref": "#/$defs/nonEmptyString"},
+        "status": {"enum": ["passed", "failed", "not-applicable", "blocked"]},
+        "evidence": {"$ref": "#/$defs/nonEmptyString"}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "approval", "revalidation", "disposition", "sequence", "reason",
+        "files_changed", "acceptance_results", "verification", "notes"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"},
+        "approval": {"enum": ["approved", "deferred", "rejected", "accepted-risk", "not-applicable"]},
+        "revalidation": {"enum": ["confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"]},
+        "disposition": {"enum": ["implemented", "already-satisfied", "retained", "deferred", "rejected", "accepted-risk", "not-applicable", "blocked"]},
+        "sequence": {"type": "integer", "minimum": 1},
+        "reason": {"$ref": "#/$defs/nonEmptyString"},
+        "files_changed": {"$ref": "#/$defs/stringArray"},
+        "acceptance_results": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/acceptanceResult"}
+        },
+        "verification": {"$ref": "#/$defs/stringArray"},
+        "notes": {"$ref": "#/$defs/stringArray"}
+      }
+    },
+    "convergenceFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "source", "severity", "status", "reason", "files_changed", "verification"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^REV-[0-9]{3}$"},
+        "title": {"$ref": "#/$defs/nonEmptyString"},
+        "source": {"$ref": "#/$defs/nonEmptyString"},
+        "severity": {"enum": ["critical", "high", "medium", "low"]},
+        "status": {"enum": ["fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"]},
+        "reason": {"$ref": "#/$defs/nonEmptyString"},
+        "files_changed": {"$ref": "#/$defs/stringArray"},
+        "verification": {"$ref": "#/$defs/stringArray"}
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["committed", "pushed", "pull_request_updated", "merged"],
+      "properties": {
+        "committed": {"enum": ["verified", "not-performed", "unverified", "not-applicable"]},
+        "pushed": {"enum": ["verified", "not-performed", "unverified", "not-applicable"]},
+        "pull_request_updated": {"enum": ["verified", "not-performed", "unverified", "not-applicable"]},
+        "merged": {"enum": ["verified", "not-performed", "unverified", "not-applicable"]}
+      }
+    },
+    "finalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_relationship", "review_convergence", "blocking_convergence_findings", "merge_readiness", "release_readiness", "delivery"],
+      "properties": {
+        "artifact_relationship": {"enum": ["working-tree", "artifact-only-descendant"]},
+        "review_convergence": {"enum": ["passed", "blocked"]},
+        "blocking_convergence_findings": {"type": "integer", "minimum": 0},
+        "merge_readiness": {"enum": ["ready", "not-ready", "not-applicable"]},
+        "release_readiness": {"enum": ["ready", "not-ready", "not-applicable"]},
+        "delivery": {"$ref": "#/$defs/delivery"}
+      }
+    }
+  }
+}

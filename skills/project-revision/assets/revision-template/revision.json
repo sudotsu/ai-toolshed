@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "project": "<owner/project or project name>",
+  "teardown_path": "<project-teardown path>",
+  "teardown_audited_revision": "<immutable revision or explicit working-tree state>",
+  "implementation_start_revision": "<immutable revision or explicit working-tree state>",
+  "implementation_end_revision": "<last product-code revision or explicit working-tree state>",
+  "revision_status": "partial",
+  "generated_at": "<ISO-8601 timestamp with timezone>",
+  "existing_work_reconciled": false,
+  "findings": [],
+  "convergence_findings": [],
+  "final_state": {
+    "artifact_relationship": "working-tree",
+    "review_convergence": "blocked",
+    "blocking_convergence_findings": 0,
+    "merge_readiness": "not-ready",
+    "release_readiness": "not-ready",
+    "delivery": {
+      "committed": "not-performed",
+      "pushed": "not-performed",
+      "pull_request_updated": "not-performed",
+      "merged": "not-performed"
+    }
+  }
+}
