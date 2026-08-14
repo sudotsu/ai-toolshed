@@ -22,6 +22,24 @@ from finding_model import (
 )
 
 
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 class _HardenedList(list):
     """List that is hashable by identity.
 
@@ -85,10 +103,10 @@ STATUS_BY_SCHEMA = {
     2: {"open", "blocked", "decision-required", "accepted-risk", "retained"},
     3: {"open", "blocked", "decision-required", "accepted-risk", "retained"},
 }
-ARRAY_FIELDS = {
+ARRAY_FIELDS = ControlledValues({
     "evidence", "affected_components", "dependencies", "dependents", "conflicts",
     "acceptance_criteria", "strategic_classification",
-}
+})
 STRING_ARRAY_FIELDS = ARRAY_FIELDS - {"evidence"}
 SCALAR_FIELDS = set(FIELDS) - ARRAY_FIELDS
 LEGACY_SCALAR_FIELDS = set(LEGACY_FIELDS) - ARRAY_FIELDS
@@ -103,24 +121,24 @@ TOP_LEVEL_BY_SCHEMA = {
         "core_workflows_fully_exercised", "generated_at", "findings",
     },
 }
-COVERAGE_STATUSES = {"passed", "failed", "partial", "blocked", "not-tested", "not-applicable"}
-COVERAGE_IMPORTANCE = {"defining", "required", "major", "supporting", "research"}
-EVIDENCE_LEVELS = {
+COVERAGE_STATUSES = ControlledValues({"passed", "failed", "partial", "blocked", "not-tested", "not-applicable"})
+COVERAGE_IMPORTANCE = ControlledValues({"defining", "required", "major", "supporting", "research"})
+EVIDENCE_LEVELS = ControlledValues({
     "behavioral", "test", "build-only", "source-only", "research",
     "owner-provided", "mixed", "none",
-}
-RECONCILIATION_CLASSIFICATIONS = {"actionable", "passed-check", "limitation", "deferred", "context", "mixed"}
-WORKFLOW_VERIFICATION = {
+})
+RECONCILIATION_CLASSIFICATIONS = ControlledValues({"actionable", "passed-check", "limitation", "deferred", "context", "mixed"})
+WORKFLOW_VERIFICATION = ControlledValues({
     "behaviorally-verified", "defect-conclusively-demonstrated",
     "operationally-unverified", "partially-verified", "source-only",
     "research-verified", "owner-provided", "blocked", "not-applicable",
-}
-CLAIM_CATEGORIES = {
+})
+CLAIM_CATEGORIES = ControlledValues({
     "credential", "licensing", "insurance", "safety", "diagnosis", "expertise",
     "guarantee", "pricing", "performance", "statistics", "privacy", "capability", "other",
-}
-CLAIM_STATES = {"verified", "unsupported", "contradicted", "partially-verified", "blocked", "not-applicable"}
-CLAIM_DISPOSITIONS = {"retain", "qualify", "remove", "replace", "investigate", "owner-decision", "not-applicable"}
+})
+CLAIM_STATES = ControlledValues({"verified", "unsupported", "contradicted", "partially-verified", "blocked", "not-applicable"})
+CLAIM_DISPOSITIONS = ControlledValues({"retain", "qualify", "remove", "replace", "investigate", "owner-decision", "not-applicable"})
 FINDING_HEADING = re.compile(r"^## ([A-Z][A-Z0-9]*-\d{3}) — (.+)$", re.MULTILINE)
 FIELD_LINE = re.compile(r"^- \*\*(.+?):\*\*\s*(.+)$", re.MULTILINE)
 ID_TOKEN = re.compile(r"\b[A-Z][A-Z0-9]*-\d{3}\b")
