@@ -27,6 +27,24 @@ from validation_common import (
     validate_timestamp,
 )
 
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REVISION_FILES = (
     "README.md",
     "00-decisions-and-scope.md",
@@ -36,45 +54,45 @@ REVISION_FILES = (
     "04-verification-and-handoff.md",
     "revision.json",
 )
-TOP_LEVEL = {
+TOP_LEVEL = ControlledValues({
     "schema_version", "project", "teardown_path", "teardown_audited_revision",
     "implementation_start_revision", "implementation_end_revision",
     "revision_status", "generated_at", "existing_work_reconciled", "findings",
     "convergence_findings", "final_state",
-}
-FINDING_KEYS = {
+})
+FINDING_KEYS = ControlledValues({
     "id", "approval", "revalidation", "disposition", "sequence", "reason",
     "files_changed", "acceptance_results", "verification", "notes",
-}
-CONVERGENCE_KEYS = {
+})
+CONVERGENCE_KEYS = ControlledValues({
     "id", "title", "source", "severity", "status", "reason",
     "files_changed", "verification",
-}
-FINAL_STATE_KEYS = {
+})
+FINAL_STATE_KEYS = ControlledValues({
     "artifact_relationship", "review_convergence", "blocking_convergence_findings",
     "merge_readiness", "release_readiness", "delivery",
-}
-DELIVERY_KEYS = {"committed", "pushed", "pull_request_updated", "merged"}
-APPROVALS = {"approved", "deferred", "rejected", "accepted-risk", "not-applicable"}
-REVALIDATIONS = {"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"}
-DISPOSITIONS = {
+})
+DELIVERY_KEYS = ControlledValues({"committed", "pushed", "pull_request_updated", "merged"})
+APPROVALS = ControlledValues({"approved", "deferred", "rejected", "accepted-risk", "not-applicable"})
+REVALIDATIONS = ControlledValues({"confirmed", "changed", "stale", "already-resolved", "not-applicable", "blocked"})
+DISPOSITIONS = ControlledValues({
     "implemented", "already-satisfied", "retained", "deferred", "rejected",
     "accepted-risk", "not-applicable", "blocked",
-}
-ACCEPTANCE_STATUSES = {"passed", "failed", "not-applicable", "blocked"}
-CONVERGENCE_SEVERITIES = {"critical", "high", "medium", "low"}
-CONVERGENCE_STATUSES = {"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"}
-BLOCKING_SEVERITIES = {"critical", "high", "medium"}
-UNRESOLVED_CONVERGENCE = {"open", "deferred", "blocked"}
+})
+ACCEPTANCE_STATUSES = ControlledValues({"passed", "failed", "not-applicable", "blocked"})
+CONVERGENCE_SEVERITIES = ControlledValues({"critical", "high", "medium", "low"})
+CONVERGENCE_STATUSES = ControlledValues({"fixed", "already-satisfied", "invalid", "open", "deferred", "blocked"})
+BLOCKING_SEVERITIES = ControlledValues({"critical", "high", "medium"})
+UNRESOLVED_CONVERGENCE = ControlledValues({"open", "deferred", "blocked"})
 # Statuses that assert a verified conclusion, so verification must be present.
-RESOLVED_CONVERGENCE = {"fixed", "already-satisfied", "invalid"}
+RESOLVED_CONVERGENCE = ControlledValues({"fixed", "already-satisfied", "invalid"})
 # Statuses that assert nothing changed at current head.
-NO_CHANGE_CONVERGENCE = {"already-satisfied", "invalid"}
-ARTIFACT_RELATIONSHIPS = {"working-tree", "artifact-only-descendant"}
-REVIEW_CONVERGENCE = {"passed", "blocked"}
-READINESS = {"ready", "not-ready", "not-applicable"}
-DELIVERY_VALUES = {"verified", "not-performed", "unverified", "not-applicable"}
-REVIEW_COMPLETION = {"completed", "blocked"}
+NO_CHANGE_CONVERGENCE = ControlledValues({"already-satisfied", "invalid"})
+ARTIFACT_RELATIONSHIPS = ControlledValues({"working-tree", "artifact-only-descendant"})
+REVIEW_CONVERGENCE = ControlledValues({"passed", "blocked"})
+READINESS = ControlledValues({"ready", "not-ready", "not-applicable"})
+DELIVERY_VALUES = ControlledValues({"verified", "not-performed", "unverified", "not-applicable"})
+REVIEW_COMPLETION = ControlledValues({"completed", "blocked"})
 ALLOWED_DISPOSITIONS = {
     "approved": {"implemented", "already-satisfied", "retained", "blocked"},
     "deferred": {"deferred"},
@@ -138,10 +156,10 @@ DELIVERY_MARKERS = {
     "pull_request_updated": "Pull request updated",
     "merged": "Merged",
 }
-ATTRIBUTION_CLASSES = {
+ATTRIBUTION_CLASSES = ControlledValues({
     "approved-finding", "convergence-fix", "preserved-existing-work",
     "revision-artifact", "generated-ignored",
-}
+})
 
 
 def index_teardown(teardown: dict[str, Any], errors: list[str]) -> dict[str, dict[str, Any]]:

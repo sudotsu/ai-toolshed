@@ -15,6 +15,55 @@ from typing import Any
 from render_handoff import rendered_files
 
 
+class _HardenedList(list):
+    """List that is hashable by identity.
+
+    Canonical JSON is untrusted. A list appearing where a scalar belongs would
+    otherwise raise TypeError the moment it reaches a set membership test, a
+    dict key, or Counter, aborting validation with a traceback instead of a
+    bounded error list. Hashing by identity makes those operations succeed and
+    return "not a member", so the surrounding check reports a normal
+    invalid-value error. isinstance(x, list) is unaffected, so every existing
+    type check still behaves identically.
+    """
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+class _HardenedDict(dict):
+    """Dict that is hashable by identity. See _HardenedList."""
+
+    __slots__ = ()
+    __hash__ = object.__hash__
+
+
+def harden_json(value):
+    """Recursively replace JSON containers with identity-hashable equivalents."""
+    if isinstance(value, dict):
+        return _HardenedDict((key, harden_json(item)) for key, item in value.items())
+    if isinstance(value, list):
+        return _HardenedList(harden_json(item) for item in value)
+    return value
+
+class ControlledValues(frozenset):
+    """A controlled-vocabulary set whose membership test never raises.
+
+    Canonical JSON is untrusted input. ``"x" in ALLOWED`` raises TypeError when
+    the candidate is a list or dict, which aborts validation with a traceback
+    instead of a bounded error list. An unhashable value is by definition not a
+    member of a set of strings, so returning False lets the surrounding check
+    report a normal invalid-value error.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item: object) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
 REQUIRED_FILES = (
     "README.md",
     "00-executive-verdict.md",
@@ -87,19 +136,19 @@ NARRATIVE_SECTIONS = {
     ),
 }
 
-ACCESS_CATEGORIES = {
+ACCESS_CATEGORIES = ControlledValues({
     "source_repository", "production_website", "stakeholder_context",
     "customer_research", "analytics_conversion_data", "social_channels",
     "review_profiles", "sales_operational_collateral", "visual_assets",
     "competitor_public_evidence",
-}
+})
 
-MODULE_IDS = {
+MODULE_IDS = ControlledValues({
     "business_audience", "positioning_differentiation", "brand_architecture",
     "message_comprehension", "offer_customer_journey", "trust_proof_claims",
     "voice_verbal_identity", "visual_identity_recognition", "channel_expression",
     "competitive_landscape", "brand_risk_claim_discipline", "strategic_preservation",
-}
+})
 
 MODULE_FACETS = {
     "business_audience": {"business_offer", "audience_roles", "triggers_outcomes", "risks_objections", "proof_needs"},
@@ -122,54 +171,54 @@ POLICY_ONLY_RESULT = re.compile(
     re.IGNORECASE,
 )
 
-EVIDENCE_CLASSES = {
+EVIDENCE_CLASSES = ControlledValues({
     "first_party_artifact", "controlled_observation", "live_observation",
     "stakeholder_statement", "customer_or_audience_evidence", "competitor_evidence",
     "independent_source", "strong_inference",
-}
-EVIDENCE_SCOPES = {
+})
+EVIDENCE_SCOPES = ControlledValues({
     "artifact_state", "stakeholder_intent", "audience_perception", "business_outcome",
     "competitor_state", "independent_verification",
-}
-PROJECT_TYPES = {
+})
+PROJECT_TYPES = ControlledValues({
     "local_service", "software_developer_product", "saas",
     "agency_professional_service", "ecommerce", "creator_media", "nonprofit",
     "multi_brand", "other",
-}
-KINDS = {"gap", "risk", "opportunity", "investigation", "strength", "cross_domain"}
-FINDING_STATUSES = {"open", "blocked", "decision_required", "retained_strength", "not_applicable", "resolved"}
-SEVERITIES = {"critical", "high", "medium", "low", "informational"}
-CONFIDENCES = {"confirmed", "high", "medium", "low"}
-CLAIM_STATES = {"verified", "plausible_unverified", "unsupported", "contradicted", "not_applicable"}
-JUDGMENT_BASES = {
+})
+KINDS = ControlledValues({"gap", "risk", "opportunity", "investigation", "strength", "cross_domain"})
+FINDING_STATUSES = ControlledValues({"open", "blocked", "decision_required", "retained_strength", "not_applicable", "resolved"})
+SEVERITIES = ControlledValues({"critical", "high", "medium", "low", "informational"})
+CONFIDENCES = ControlledValues({"confirmed", "high", "medium", "low"})
+CLAIM_STATES = ControlledValues({"verified", "plausible_unverified", "unsupported", "contradicted", "not_applicable"})
+JUDGMENT_BASES = ControlledValues({
     "observed_behavior", "audience_evidence", "category_evidence",
     "accessibility_or_legibility", "claim_or_provenance_evidence",
     "aesthetic_preference", "not_applicable",
-}
-OUTCOME_STATUSES = {"measured", "partial", "blocked", "not_applicable"}
-DISCIPLINES = {"brand", "product", "seo", "accessibility", "legal", "conversion", "engineering", "operations", "mixed"}
-IMPACTS = {"very_high", "high", "medium", "low", "unknown"}
-EFFORTS = {"trivial", "small", "medium", "large", "initiative", "unknown"}
-REVERSIBILITY = {"easy", "moderate", "hard", "unknown"}
-DISPOSITIONS = {"implement", "investigate", "decide", "preserve", "accept_risk", "defer", "leave_alone"}
-PHASE_TYPES = {"foundation_decision", "trust_claim_correction", "message_offer", "visual_system", "channel_rollout", "measurement_research", "externally_blocked", "preservation"}
-CLAIM_TYPES = {
+})
+OUTCOME_STATUSES = ControlledValues({"measured", "partial", "blocked", "not_applicable"})
+DISCIPLINES = ControlledValues({"brand", "product", "seo", "accessibility", "legal", "conversion", "engineering", "operations", "mixed"})
+IMPACTS = ControlledValues({"very_high", "high", "medium", "low", "unknown"})
+EFFORTS = ControlledValues({"trivial", "small", "medium", "large", "initiative", "unknown"})
+REVERSIBILITY = ControlledValues({"easy", "moderate", "hard", "unknown"})
+DISPOSITIONS = ControlledValues({"implement", "investigate", "decide", "preserve", "accept_risk", "defer", "leave_alone"})
+PHASE_TYPES = ControlledValues({"foundation_decision", "trust_claim_correction", "message_offer", "visual_system", "channel_rollout", "measurement_research", "externally_blocked", "preservation"})
+CLAIM_TYPES = ControlledValues({
     "identity", "category", "audience", "offer", "credential", "licensing",
     "certification", "safety", "tenure", "pricing", "availability", "service_area",
     "guarantee", "outcome", "review", "technical_capability", "open_source",
     "privacy", "authority", "other",
-}
-CLAIM_INVENTORY_STATES = {"verified", "plausible_unverified", "unsupported", "contradicted", "outdated", "not_applicable"}
-CLAIM_RISKS = {"high", "medium", "low", "informational"}
-ACCESS_STATUSES = {"available", "partial", "blocked", "not_applicable"}
-MODULE_STATUSES = {"passed", "failed", "partial", "blocked", "not_tested", "not_applicable"}
-MATERIALITIES = {"defining", "high", "medium", "low"}
-CHECK_METHODS = {
+})
+CLAIM_INVENTORY_STATES = ControlledValues({"verified", "plausible_unverified", "unsupported", "contradicted", "outdated", "not_applicable"})
+CLAIM_RISKS = ControlledValues({"high", "medium", "low", "informational"})
+ACCESS_STATUSES = ControlledValues({"available", "partial", "blocked", "not_applicable"})
+MODULE_STATUSES = ControlledValues({"passed", "failed", "partial", "blocked", "not_tested", "not_applicable"})
+MATERIALITIES = ControlledValues({"defining", "high", "medium", "low"})
+CHECK_METHODS = ControlledValues({
     "source_inspection", "live_site_review", "rendered_browser",
     "controlled_comprehension", "stakeholder_evidence", "customer_research",
     "analytics_analysis", "social_profile_review", "collateral_review",
     "competitor_research", "independent_verification",
-}
+})
 METHOD_EVIDENCE_CLASSES = {
     "source_inspection": {"first_party_artifact"},
     "live_site_review": {"live_observation", "controlled_observation"},
@@ -191,11 +240,11 @@ FACET_ACCESS_REQUIREMENTS = {
     ("trust_proof_claims", "reviews_testimonials"): {"review_profiles"},
     ("visual_identity_recognition", "asset_provenance"): {"visual_assets"},
 }
-CHECK_STATUSES = {"passed", "failed", "partial", "blocked", "not_applicable"}
-SAMPLE_STATUSES = {"observed", "unavailable", "not_applicable"}
-COMPETITOR_RELATIONSHIPS = {"direct_competitor", "substitute", "inaction", "category_benchmark"}
+CHECK_STATUSES = ControlledValues({"passed", "failed", "partial", "blocked", "not_applicable"})
+SAMPLE_STATUSES = ControlledValues({"observed", "unavailable", "not_applicable"})
+COMPETITOR_RELATIONSHIPS = ControlledValues({"direct_competitor", "substitute", "inaction", "category_benchmark"})
 
-FINDING_KEYS = {
+FINDING_KEYS = ControlledValues({
     "id", "title", "kind", "module", "status", "severity", "confidence",
     "evidence_quality", "claim_state", "judgment_basis", "outcome_evidence_status",
     "affected_brands", "affected_audiences", "affected_surfaces", "affected_channels",
@@ -205,21 +254,21 @@ FINDING_KEYS = {
     "dependencies", "conflicts", "blocker", "owner_decision", "recommendation",
     "acceptance_criteria", "verification_methods", "preservation_constraints",
     "implementation_notes", "responsible_discipline", "priority", "implementation",
-}
-PRIORITY_KEYS = {"brand_impact", "business_impact", "effort", "reversibility"}
-IMPLEMENTATION_KEYS = {"phase_id", "order", "disposition", "rationale", "validation_gate", "targets", "non_goals", "owner_or_external_actions"}
-EVIDENCE_LINK_KEYS = {"evidence_id", "role", "claim"}
-CLAIM_KEYS = {"id", "claim", "brand", "surfaces", "audiences", "claim_type", "state", "risk_level", "evidence_ids", "owner", "required_action", "verification_method"}
-EVIDENCE_KEYS = {"id", "evidence_class", "evidence_scope", "title", "publisher_or_owner", "locator", "accessed_at", "volatile", "summary", "limitations", "artifact_path", "supersedes"}
-PHASE_KEYS = {"id", "title", "phase_type", "rationale", "finding_ids", "validation_gate", "expected_outcome"}
-ACCESS_KEYS = {"category", "status", "material_to_comprehensive", "coverage_window", "evidence_ids", "limitations", "next_step"}
-MODULE_KEYS = {"id", "applicable", "materiality", "status", "check_ids", "finding_ids", "evidence_ids", "limitations", "next_step"}
-CHECK_KEYS = {"id", "module_id", "facet", "method", "method_evidence", "status", "evidence_ids", "finding_ids", "result", "unknowns", "limitations", "limitation_refs", "available_work_completed"}
-METHOD_EVIDENCE_KEYS = {"evidence_id", "role", "observation"}
-SURFACE_KEYS = {"id", "surface", "locator", "brand", "audience", "channel", "viewport_or_format", "method", "status", "observed_at", "evidence_ids", "finding_ids", "observations", "limitations"}
-COMPETITOR_KEYS = {"id", "name", "locator", "relationship", "observed_at", "status", "category_language", "trust_conventions", "offer_conventions", "visual_patterns", "strengths", "strategic_consequence", "evidence_ids", "limitations"}
-LIMITATION_KEYS = {"id", "description", "status", "completion_requirement", "affected_module_ids"}
-RECONCILIATION_KEYS = {"location", "finding_ids", "non_actionable_explanation"}
+})
+PRIORITY_KEYS = ControlledValues({"brand_impact", "business_impact", "effort", "reversibility"})
+IMPLEMENTATION_KEYS = ControlledValues({"phase_id", "order", "disposition", "rationale", "validation_gate", "targets", "non_goals", "owner_or_external_actions"})
+EVIDENCE_LINK_KEYS = ControlledValues({"evidence_id", "role", "claim"})
+CLAIM_KEYS = ControlledValues({"id", "claim", "brand", "surfaces", "audiences", "claim_type", "state", "risk_level", "evidence_ids", "owner", "required_action", "verification_method"})
+EVIDENCE_KEYS = ControlledValues({"id", "evidence_class", "evidence_scope", "title", "publisher_or_owner", "locator", "accessed_at", "volatile", "summary", "limitations", "artifact_path", "supersedes"})
+PHASE_KEYS = ControlledValues({"id", "title", "phase_type", "rationale", "finding_ids", "validation_gate", "expected_outcome"})
+ACCESS_KEYS = ControlledValues({"category", "status", "material_to_comprehensive", "coverage_window", "evidence_ids", "limitations", "next_step"})
+MODULE_KEYS = ControlledValues({"id", "applicable", "materiality", "status", "check_ids", "finding_ids", "evidence_ids", "limitations", "next_step"})
+CHECK_KEYS = ControlledValues({"id", "module_id", "facet", "method", "method_evidence", "status", "evidence_ids", "finding_ids", "result", "unknowns", "limitations", "limitation_refs", "available_work_completed"})
+METHOD_EVIDENCE_KEYS = ControlledValues({"evidence_id", "role", "observation"})
+SURFACE_KEYS = ControlledValues({"id", "surface", "locator", "brand", "audience", "channel", "viewport_or_format", "method", "status", "observed_at", "evidence_ids", "finding_ids", "observations", "limitations"})
+COMPETITOR_KEYS = ControlledValues({"id", "name", "locator", "relationship", "observed_at", "status", "category_language", "trust_conventions", "offer_conventions", "visual_patterns", "strengths", "strategic_consequence", "evidence_ids", "limitations"})
+LIMITATION_KEYS = ControlledValues({"id", "description", "status", "completion_requirement", "affected_module_ids"})
+RECONCILIATION_KEYS = ControlledValues({"location", "finding_ids", "non_actionable_explanation"})
 
 FINDING_ID = re.compile(r"^[A-Z][A-Z0-9]*-\d{3}$")
 EVIDENCE_ID = re.compile(r"^EVID-\d{3}$")
@@ -234,7 +283,7 @@ NOT_APPLICABLE = re.compile(r"^Not applicable — .+")
 
 def load_object(path: Path, errors: list[str]) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = harden_json(json.loads(path.read_text(encoding="utf-8")))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         errors.append(f"cannot read valid JSON from {path.name}: {exc}")
         return {}
