@@ -63,6 +63,10 @@ Every claim records exact surfaces, affected audiences, evidence, risk, owner, r
 
 Competitor conclusions require a canonical `competitor_samples` record with a concrete name or alternative, locator, observed date, evidence IDs, and a strategic consequence. Record category language, trust conventions, offer conventions, visual patterns, and strengths only when observed.
 
+Each observed named competitor must cite at least one `competitor_evidence` source that identifies that competitor by exact name or locator. A bundle is acceptable only when its metadata or referenced manifest identifies every included competitor and maps each entity to its captured artifact. A source that claims to cover several competitors while pointing to only one competitor's page does not support the others.
+
+Keep per-competitor records specific. Shared conventions may repeat as individual observations, but two different observed competitors may not use the same complete canonical profile. Record at least one distinction grounded in the cited source, or mark the sample unavailable when its individual state was not actually captured.
+
 Use `unavailable` when public evidence could not be captured. State the exact reason and keep the competitive module partial or blocked when the missing evidence could change positioning conclusions.
 
 ## Visual and multimodal judgment

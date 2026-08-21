@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from render_handoff import rendered_files
 
@@ -321,6 +322,59 @@ def string_list(value: Any, label: str, errors: list[str], *, required: bool = F
     if required and not value:
         errors.append(f"{label} must not be empty")
     return value
+
+
+def normalize_identity_text(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def locator_host(value: Any) -> str:
+    if not isinstance(value, str) or "://" not in value:
+        return ""
+    try:
+        return (urlparse(value).hostname or "").lower().removeprefix("www.")
+    except ValueError:
+        return ""
+
+
+def competitor_evidence_identifies_sample(root: Path, source: dict[str, Any], sample: dict[str, Any]) -> bool:
+    """Return whether canonical evidence identifies the exact named competitor."""
+    metadata_fields = (
+        "title", "publisher_or_owner", "locator", "summary", "limitations", "artifact_path",
+    )
+    haystack = "\n".join(str(source.get(field, "")) for field in metadata_fields)
+    artifact = source.get("artifact_path")
+    if isinstance(artifact, str):
+        path = root / artifact
+        if path.is_file() and not path.is_symlink():
+            try:
+                with path.open("rb") as handle:
+                    haystack += "\n" + handle.read(2_000_000).decode("utf-8", errors="ignore")
+            except OSError:
+                pass
+
+    sample_name = normalize_identity_text(sample.get("name"))
+    if sample_name and sample_name in normalize_identity_text(haystack):
+        return True
+    sample_host = locator_host(sample.get("locator"))
+    return bool(sample_host and sample_host in haystack.lower())
+
+
+def competitor_profile_fingerprint(sample: dict[str, Any]) -> tuple[Any, ...]:
+    fields = (
+        "category_language", "trust_conventions", "offer_conventions",
+        "visual_patterns", "strengths",
+    )
+    arrays = []
+    for field in fields:
+        values = sample.get(field)
+        if not isinstance(values, list):
+            arrays.append(())
+            continue
+        arrays.append(tuple(sorted(normalize_identity_text(value) for value in values if nonempty(value))))
+    return tuple(arrays)
 
 
 def parse_date(value: Any, label: str, errors: list[str]) -> date | None:
@@ -726,8 +780,10 @@ def validate_graph_and_phases(data: dict[str, Any], findings: dict[str, dict[str
                 errors.append(f"{fid} depends on unknown finding: {dep}")
             else:
                 graph[fid].append(dep)
-                order = finding.get("implementation", {}).get("order")
-                dep_order = findings[dep].get("implementation", {}).get("order")
+                implementation = finding.get("implementation")
+                dependency_implementation = findings[dep].get("implementation")
+                order = implementation.get("order") if isinstance(implementation, dict) else None
+                dep_order = dependency_implementation.get("order") if isinstance(dependency_implementation, dict) else None
                 if isinstance(order, int) and isinstance(dep_order, int) and dep_order >= order:
                     errors.append(f"{fid} dependency {dep} does not appear earlier in implementation order")
         for conflict in conflicts:
@@ -783,7 +839,9 @@ def validate_graph_and_phases(data: dict[str, Any], findings: dict[str, dict[str
             if fid not in findings:
                 errors.append(f"{pid} references unknown finding: {fid}")
                 continue
-            implementation = findings[fid].get("implementation", {})
+            implementation = findings[fid].get("implementation")
+            if not isinstance(implementation, dict):
+                implementation = {}
             if implementation.get("phase_id") != pid:
                 errors.append(f"{fid}.phase_id disagrees with phase {pid}")
             if isinstance(implementation.get("order"), int):
@@ -1056,14 +1114,14 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
                 errors.append(f"{mid} non-applicable module needs one module_scope not_applicable check")
         else:
             missing = sorted(MODULE_FACETS[mid] - set(facets))
-            extra = sorted(set(facets) - MODULE_FACETS[mid])
-            duplicates = sorted(facet for facet, count in Counter(facets).items() if count > 1)
+            extra = sorted(set(facets) - MODULE_FACETS[mid], key=str)
+            duplicates = sorted((facet for facet, count in Counter(facets).items() if count > 1), key=str)
             if missing:
                 errors.append(f"{mid} surface checks missing facets: {', '.join(missing)}")
             if extra:
-                errors.append(f"{mid} surface checks contain unknown facets: {', '.join(extra)}")
+                errors.append(f"{mid} surface checks contain unknown facets: {', '.join(map(str, extra))}")
             if duplicates:
-                errors.append(f"{mid} surface check facets repeated: {', '.join(duplicates)}")
+                errors.append(f"{mid} surface check facets repeated: {', '.join(map(str, duplicates))}")
         statuses = {item.get("status") for item in owned}
         if module.get("status") == "passed" and statuses - {"passed", "not_applicable"}:
             errors.append(f"{mid} passed status disagrees with check statuses")
@@ -1108,7 +1166,8 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         if item.get("status") == "open":
             provisional.append(f"material limitation {lid} is open")
     for cid, item in check_map.items():
-        for ref in item.get("limitation_refs", []):
+        limitation_refs = item.get("limitation_refs")
+        for ref in limitation_refs if isinstance(limitation_refs, list) else []:
             if isinstance(ref, str) and ref.startswith("access:"):
                 if ref.split(":", 1)[1] not in ACCESS_CATEGORIES:
                     errors.append(f"{cid} references unknown access limitation: {ref}")
@@ -1188,6 +1247,7 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
     competitor_ids: set[str] = set()
     observed_competitor = False
     unavailable_competitor = False
+    observed_profiles: defaultdict[tuple[Any, ...], list[str]] = defaultdict(list)
     if not isinstance(competitor_items, list) or not competitor_items:
         errors.append("competitor_samples must be a non-empty array")
         competitor_items = []
@@ -1212,16 +1272,32 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         competitor_status = item.get("status")
         if competitor_status not in SAMPLE_STATUSES:
             errors.append(f"{cid}.status has invalid value")
+        competitor_evidence_ids: list[str] = []
         for field in ("category_language", "trust_conventions", "offer_conventions", "visual_patterns", "strengths", "evidence_ids", "limitations"):
             values = string_list(item.get(field), f"{cid}.{field}", errors)
             if field == "evidence_ids":
+                competitor_evidence_ids = values
                 for evid in values:
                     if evid not in evidence:
                         errors.append(f"{cid} references unknown evidence: {evid}")
         if competitor_status == "observed":
             observed_competitor = True
-            if not item.get("evidence_ids"):
+            if not competitor_evidence_ids:
                 errors.append(f"{cid} observed competitor requires evidence")
+            if item.get("relationship") != "inaction":
+                matching_sources = [
+                    evidence[evid]
+                    for evid in competitor_evidence_ids
+                    if evid in evidence
+                    and evidence[evid].get("evidence_class") == "competitor_evidence"
+                    and competitor_evidence_identifies_sample(root, evidence[evid], item)
+                ]
+                if not matching_sources:
+                    errors.append(
+                        f"{cid} observed competitor lacks sample-specific competitor evidence "
+                        f"identifying its exact name or locator"
+                    )
+                observed_profiles[competitor_profile_fingerprint(item)].append(cid)
         if competitor_status == "unavailable":
             unavailable_competitor = True
             if not item.get("evidence_ids") or not item.get("limitations"):
@@ -1232,6 +1308,11 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
             errors.append("applicable competitive_landscape requires observed or evidenced-unavailable competitor samples")
         if unavailable_competitor and not observed_competitor and competitive.get("status") not in {"partial", "blocked"}:
             errors.append("competitive landscape with only unavailable evidence must be partial or blocked")
+    for ids in (ids for ids in observed_profiles.values() if len(ids) > 1):
+        errors.append(
+            "observed competitor samples repeat an identical canonical evidence profile: "
+            + ", ".join(sorted(ids))
+        )
 
     reconciliation = data.get("narrative_reconciliation")
     covered_files: set[str] = set()
@@ -1259,17 +1340,30 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
             errors.append(f"{label} cannot contain findings and a substantive non-actionable explanation")
         if not ids and not nonempty(explanation):
             errors.append(f"{label} needs finding IDs or a non-actionable explanation")
-        if not ids and isinstance(location, str):
+        matched_file = None
+        if isinstance(location, str):
             matched_file = next((filename for filename in NARRATIVE_FILES if location.startswith(filename)), None)
-            if matched_file:
-                narrative = (root / matched_file).read_text(encoding="utf-8")
-                action_pattern = re.compile(
-                    r"\b(should|must|recommend(?:s|ed|ation)?)\b|"
-                    r"(?:^|[.!?]\s+)(?:Add|Remove|Replace|Decide|Implement|Change|Revise|Create|Adopt|Retain|Preserve)\b",
-                    re.IGNORECASE,
+        if ids and matched_file and matched_file != "00-executive-verdict.md":
+            narrative = (root / matched_file).read_text(encoding="utf-8")
+            missing_ids = [
+                fid for fid in ids
+                if isinstance(fid, str)
+                and not re.search(rf"(?<![A-Z0-9-]){re.escape(fid)}(?![A-Z0-9-])", narrative)
+            ]
+            if missing_ids:
+                errors.append(
+                    f"{matched_file} reconciliation maps findings not named in the narrative: "
+                    + ", ".join(missing_ids)
                 )
-                if action_pattern.search(narrative):
-                    errors.append(f"{matched_file} contains actionable language but its reconciliation has no finding IDs")
+        if not ids and matched_file:
+            narrative = (root / matched_file).read_text(encoding="utf-8")
+            action_pattern = re.compile(
+                r"\b(should|must|recommend(?:s|ed|ation)?)\b|"
+                r"(?:^|[.!?]\s+)(?:Add|Remove|Replace|Decide|Implement|Change|Revise|Create|Adopt|Retain|Preserve)\b",
+                re.IGNORECASE,
+            )
+            if action_pattern.search(narrative):
+                errors.append(f"{matched_file} contains actionable language but its reconciliation has no finding IDs")
     missing_narratives = sorted(set(NARRATIVE_FILES) - covered_files)
     if missing_narratives:
         errors.append(f"narrative files missing reconciliation: {', '.join(missing_narratives)}")
@@ -1310,6 +1404,13 @@ def validate_status_and_generated(root: Path, expected_status: str | None, error
     ):
         if not re.search(rf"(?mi)^- \*\*{re.escape(label)}:\*\*\s+\S", readme):
             errors.append(f"README.md must contain a non-empty '{label}' metadata line")
+    portable_commands = (
+        "python3 <skill-directory>/scripts/render_handoff.py <brand-teardown-directory>",
+        "python3 <skill-directory>/scripts/validate_brand_teardown.py <brand-teardown-directory>",
+    )
+    for command in portable_commands:
+        if command not in readme:
+            errors.append(f"README.md must contain the portable command: {command}")
     for filename, headings in NARRATIVE_SECTIONS.items():
         narrative = (root / filename).read_text(encoding="utf-8")
         paragraphs = [

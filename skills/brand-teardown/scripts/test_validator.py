@@ -60,7 +60,7 @@ def base_findings() -> dict:
         "evidence_sources": [
             evidence("EVID-001", "first_party_artifact", "artifact_state", "Repository and homepage claim capture"),
             evidence("EVID-002", "controlled_observation", "artifact_state", "Desktop and mobile comprehension review", summary="Controlled comparison confirmed audited revision abc123 matches the production deployment identifier for the captured desktop and mobile surfaces."),
-            evidence("EVID-003", "competitor_evidence", "competitor_state", "Named category benchmark capture", volatile=True),
+            evidence("EVID-003", "competitor_evidence", "competitor_state", "Concrete Benchmark Tool category capture", volatile=True),
             evidence("EVID-004", "customer_or_audience_evidence", "audience_perception", "Moderated developer comprehension session"),
         ],
         "claims": [
@@ -353,7 +353,8 @@ def write_fixture(root: Path, findings: dict | None = None, coverage: dict | Non
         "- **Boundary:** read-only audit; no project or external state changed\n"
         "- **Canonical files:** findings.json and coverage.json\n"
         "- **Evidence limitations:** synthetic validator fixture; no real audience outcome claim\n\n"
-        "Run render_handoff.py and validate_brand_teardown.py.\n",
+        "Render with `python3 <skill-directory>/scripts/render_handoff.py <brand-teardown-directory>` "
+        "and validate with `python3 <skill-directory>/scripts/validate_brand_teardown.py <brand-teardown-directory>`.\n",
         encoding="utf-8",
     )
     for filename in NARRATIVE_FILES:
@@ -367,6 +368,16 @@ def write_fixture(root: Path, findings: dict | None = None, coverage: dict | Non
                 "The canonical finding and coverage ledgers distinguish artifact state, reviewer observation, audience evidence, and business outcomes. "
                 "This substantive fixture paragraph verifies report topology without asserting facts about a real organization.\n\n"
             )
+        mapped_ids = next(
+            (
+                row["finding_ids"]
+                for row in coverage["narrative_reconciliation"]
+                if row["location"].startswith(filename)
+            ),
+            [],
+        )
+        if mapped_ids:
+            content += "Canonical finding references: " + ", ".join(mapped_ids) + ".\n"
         (root / filename).write_text(content, encoding="utf-8")
     render_to_disk(root)
 
@@ -425,6 +436,17 @@ class BrandValidatorTests(unittest.TestCase):
 
         self.assert_invalid(mutate, "narrative files missing reconciliation")
 
+    def test_nonexecutive_narrative_mapping_requires_literal_finding_reference(self) -> None:
+        def mutate(_findings, coverage):
+            row = next(
+                item for item in coverage["narrative_reconciliation"]
+                if item["location"].startswith("01-brand-and-business-model.md")
+            )
+            row["finding_ids"] = ["MSG-001"]
+            row["non_actionable_explanation"] = None
+
+        self.assert_invalid(mutate, "reconciliation maps findings not named in the narrative")
+
     def test_narrative_sections_cannot_be_thin_stubs(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "brand-teardown"
@@ -445,6 +467,20 @@ class BrandValidatorTests(unittest.TestCase):
             path.write_text(text_value + f"\n\n{repeated}\n\n{repeated}\n", encoding="utf-8")
             errors = validate(root)
             self.assertTrue(any("repeated substantive narrative paragraphs" in error for error in errors), errors)
+
+    def test_readme_requires_portable_skill_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "brand-teardown"
+            write_fixture(root)
+            path = root / "README.md"
+            text_value = path.read_text(encoding="utf-8")
+            text_value = text_value.replace(
+                "python3 <skill-directory>/scripts/render_handoff.py <brand-teardown-directory>",
+                "python3 /data/local/skills/brand-teardown/scripts/render_handoff.py .",
+            )
+            path.write_text(text_value, encoding="utf-8")
+            errors = validate(root)
+            self.assertTrue(any("README.md must contain the portable command" in error for error in errors), errors)
 
     def test_actionable_narrative_requires_finding_reconciliation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -493,6 +529,23 @@ class BrandValidatorTests(unittest.TestCase):
             findings["findings"][0]["recommendation"] = "Replace the message to match a category benchmark."
 
         self.assert_invalid(mutate, "competitor-dependent judgment without competitor evidence")
+
+    def test_observed_competitor_requires_sample_specific_evidence(self) -> None:
+        def mutate(_findings, coverage):
+            sample = coverage["competitor_samples"][0]
+            sample["name"] = "Unrelated Benchmark"
+            sample["locator"] = "https://unrelated-benchmark.example/"
+
+        self.assert_invalid(mutate, "lacks sample-specific competitor evidence")
+
+    def test_observed_competitor_profiles_cannot_be_duplicated(self) -> None:
+        def mutate(_findings, coverage):
+            duplicate = copy.deepcopy(coverage["competitor_samples"][0])
+            duplicate["id"] = "COMP-002"
+            duplicate["name"] = "Concrete Benchmark Tool"
+            coverage["competitor_samples"].append(duplicate)
+
+        self.assert_invalid(mutate, "repeat an identical canonical evidence profile")
 
     def test_passed_check_requires_supporting_method_evidence(self) -> None:
         def mutate(_findings, coverage):

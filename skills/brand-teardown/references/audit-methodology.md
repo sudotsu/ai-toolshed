@@ -123,6 +123,8 @@ Activate only relevant surfaces. A not-applicable channel needs a project-specif
 
 Capture named competitors or alternatives, dated public evidence, and the strategic consequence. When reliable evidence is inaccessible, mark the module provisional rather than inventing a landscape.
 
+Treat the comparison set as individual evidence, not a count. For every observed named competitor, retain evidence that identifies the exact entity or locator and record at least one source-specific observation. Shared category conventions belong in the synthesis; do not copy the same full profile into multiple canonical competitor records. Distinguish the strongest comparator for each relevant dimension from the merely typical examples so “top competitor” does not become a generic composite that no actual competitor demonstrates.
+
 ### 11. Brand risk and claim discipline
 
 - `credential_and_authority_risk`
