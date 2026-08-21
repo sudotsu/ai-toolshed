@@ -36,12 +36,7 @@ WRONG_TYPES = (
 
 # Call sites known to still raise on malformed input, as "file.py:line".
 # Shrink this list; never grow it.
-KNOWN_UNGUARDED: frozenset[str] = frozenset([
-    "validate_brand_teardown.py:1064",
-    "validate_brand_teardown.py:1111",
-    "validate_brand_teardown.py:729",
-    "validate_brand_teardown.py:730"
-])
+KNOWN_UNGUARDED: frozenset[str] = frozenset()
 
 
 def json_paths(value, prefix=()):

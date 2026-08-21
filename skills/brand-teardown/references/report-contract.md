@@ -32,6 +32,8 @@ Keep evidence compact, sanitized, reproducible, and outside the audited project.
 
 State project and revision, production locator, audit dates, read-only boundary, canonical files, renderer and validator commands, review status, and evidence limitations. Use non-empty metadata lines labeled exactly `Project`, `Audited revision`, `Production locator`, `Audit dates`, `Review status`, `Boundary`, `Canonical files`, and `Evidence limitations`.
 
+Use portable commands with placeholders exactly as shown under Generated files and validation. Never embed a machine-specific absolute skill path in the delivered handoff.
+
 ### 00 — Executive verdict
 
 Include an exact `**Review status:** complete|provisional` line, brand thesis, audiences, overall verdict, strongest retained qualities, primary gaps and risks, owner decisions, best-established standard used for comparison, remaining gap to that standard, scope, dates, assumptions, and completion requirements.
@@ -319,6 +321,8 @@ strategic_consequence, evidence_ids, limitations
 
 Observed records require a concrete named entity, dated evidence, and a strategic consequence. An applicable competitive module requires at least one observed competitor or an evidenced unavailable record that keeps the module partial or blocked.
 
+Every observed named competitor except inaction must reference at least one `competitor_evidence` source that identifies the exact sample by name or locator in its metadata or captured artifact. Bundled evidence must use a referenced manifest that explicitly maps every competitor to its capture. Each observed sample must contain a source-specific canonical evidence profile; exact duplicate observation profiles across different named competitors are invalid because they erase which entity demonstrated which strength.
+
 ### Material limitations
 
 Each limitation requires `id`, `description`, `status`, `completion_requirement`, and `affected_module_ids`. ID is `LIMIT-###`; status is `open|resolved`.
@@ -328,6 +332,8 @@ Open material limitations, material blocked/partial access, defining or high blo
 ### Narrative reconciliation
 
 Every narrative file from `00` through `08` requires at least one reconciliation row with `location`, `finding_ids`, and `non_actionable_explanation`. Rows with findings use null or `None` explanation. Rows without findings require a concrete passed-check, context, assumption, limitation, or not-applicable explanation. Narrative prose containing a recommendation or implementation direction must reconcile to at least one canonical finding; a generic “non-actionable” explanation cannot hide an action.
+
+For narratives `01` through `08`, list only findings materially addressed in that file and include each mapped finding ID literally in the narrative. The executive verdict may summarize the complete register. Blanket mappings that attach every finding to every narrative are not traceability.
 
 ## Generated files and validation
 

@@ -45,7 +45,7 @@ Read [audit-methodology.md](references/audit-methodology.md) before collecting e
 3. Build a claim inventory covering promises, proof, credentials, guarantees, availability, pricing, outcomes, identity, and authority.
 4. Review brand architecture, positioning, message hierarchy, offers, proof, voice, visuals, and channel expression as connected systems.
 5. Capture multimodal evidence when available: screenshots, logos, photography, video frames, advertisements, flyers, estimates, invoices, packaging, signage, uniforms, vehicles, repository pages, and documentation.
-6. Research concrete competitors and substitutes. Capture dated evidence for category language, trust conventions, offers, visual patterns, strengths, and strategic consequences.
+6. Research concrete competitors and substitutes. Keep each observed competitor tied to evidence that identifies that exact entity, and record source-specific category language, trust conventions, offers, visual patterns, strengths, and strategic consequences. Do not flatten different competitors into one repeated category profile.
 7. Record facet-level work in `coverage.json` while investigating. State what was established, what remains unknown, and why.
 8. Register every actionable observation exactly once. Classify non-actionable material as a retained strength, passed check, limitation, context, or not applicable.
 
@@ -67,7 +67,7 @@ Read [report-contract.md](references/report-contract.md) before writing the hand
 
 Create `brand-teardown/` outside the audited source tree unless the user explicitly selects a safe in-repository documentation location. If the target exists, use a dated sibling unless replacement is authorized.
 
-Use the exact artifact and canonical schemas in [report-contract.md](references/report-contract.md). `findings.json` and `coverage.json` are authoritative. Never hand-edit the five generated registers.
+Use the exact artifact and canonical schemas in [report-contract.md](references/report-contract.md). `findings.json` and `coverage.json` are authoritative. Keep narrative reconciliation narrow: every mapped finding in narratives `01` through `08` must be named in that narrative. Never hand-edit the five generated registers.
 
 Render and validate:
 
