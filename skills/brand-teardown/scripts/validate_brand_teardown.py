@@ -330,11 +330,20 @@ def normalize_identity_text(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
 
 
-def locator_host(value: Any) -> str:
-    if not isinstance(value, str) or "://" not in value:
+def normalize_locator(value: Any) -> str:
+    if not isinstance(value, str):
         return ""
     try:
-        return (urlparse(value).hostname or "").lower().removeprefix("www.")
+        parsed = urlparse(value.strip())
+        host = (parsed.hostname or "").lower().removeprefix("www.")
+        if parsed.scheme.lower() not in {"http", "https"} or not host:
+            return ""
+        port = f":{parsed.port}" if parsed.port is not None else ""
+        path = parsed.path or "/"
+        if path != "/":
+            path = path.rstrip("/")
+        query = f"?{parsed.query}" if parsed.query else ""
+        return f"{parsed.scheme.lower()}://{host}{port}{path}{query}"
     except ValueError:
         return ""
 
@@ -358,8 +367,12 @@ def competitor_evidence_identifies_sample(root: Path, source: dict[str, Any], sa
     sample_name = normalize_identity_text(sample.get("name"))
     if sample_name and sample_name in normalize_identity_text(haystack):
         return True
-    sample_host = locator_host(sample.get("locator"))
-    return bool(sample_host and sample_host in haystack.lower())
+    sample_locator = normalize_locator(sample.get("locator"))
+    evidence_locators = {
+        normalize_locator(candidate.rstrip(".,;:)"))
+        for candidate in re.findall(r"https?://[^\s<>\"'`]+", haystack, flags=re.IGNORECASE)
+    }
+    return bool(sample_locator and sample_locator in evidence_locators)
 
 
 def competitor_profile_fingerprint(sample: dict[str, Any]) -> tuple[Any, ...]:
@@ -1316,6 +1329,12 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
 
     reconciliation = data.get("narrative_reconciliation")
     covered_files: set[str] = set()
+    mapped_findings_by_file: defaultdict[str, set[str]] = defaultdict(set)
+    action_pattern = re.compile(
+        r"\b(should|must|recommend(?:s|ed|ation)?)\b|"
+        r"(?:^|[.!?]\s+)(?:Add|Remove|Replace|Decide|Implement|Change|Revise|Create|Adopt|Retain|Preserve)\b",
+        re.IGNORECASE,
+    )
     if not isinstance(reconciliation, list) or not reconciliation:
         errors.append("narrative_reconciliation must be a non-empty array")
         reconciliation = []
@@ -1343,6 +1362,8 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
         matched_file = None
         if isinstance(location, str):
             matched_file = next((filename for filename in NARRATIVE_FILES if location.startswith(filename)), None)
+        if ids and matched_file:
+            mapped_findings_by_file[matched_file].update(ids)
         if ids and matched_file and matched_file != "00-executive-verdict.md":
             narrative = (root / matched_file).read_text(encoding="utf-8")
             missing_ids = [
@@ -1355,15 +1376,12 @@ def validate_coverage(root: Path, data: dict[str, Any], findings_data: dict[str,
                     f"{matched_file} reconciliation maps findings not named in the narrative: "
                     + ", ".join(missing_ids)
                 )
-        if not ids and matched_file:
-            narrative = (root / matched_file).read_text(encoding="utf-8")
-            action_pattern = re.compile(
-                r"\b(should|must|recommend(?:s|ed|ation)?)\b|"
-                r"(?:^|[.!?]\s+)(?:Add|Remove|Replace|Decide|Implement|Change|Revise|Create|Adopt|Retain|Preserve)\b",
-                re.IGNORECASE,
-            )
-            if action_pattern.search(narrative):
-                errors.append(f"{matched_file} contains actionable language but its reconciliation has no finding IDs")
+    for filename in covered_files:
+        if mapped_findings_by_file.get(filename):
+            continue
+        narrative = (root / filename).read_text(encoding="utf-8")
+        if action_pattern.search(narrative):
+            errors.append(f"{filename} contains actionable language but its reconciliation has no finding IDs")
     missing_narratives = sorted(set(NARRATIVE_FILES) - covered_files)
     if missing_narratives:
         errors.append(f"narrative files missing reconciliation: {', '.join(missing_narratives)}")
@@ -1411,6 +1429,13 @@ def validate_status_and_generated(root: Path, expected_status: str | None, error
     for command in portable_commands:
         if command not in readme:
             errors.append(f"README.md must contain the portable command: {command}")
+    for script_name in ("render_handoff.py", "validate_brand_teardown.py"):
+        absolute_command = re.compile(
+            rf"\bpython(?:3(?:\.\d+)*)?\s+[\"']?(?:/|[A-Za-z]:[\\/])[^\r\n`\"']*{re.escape(script_name)}\b",
+            re.IGNORECASE,
+        )
+        if absolute_command.search(readme):
+            errors.append(f"README.md contains a machine-specific absolute command path to {script_name}")
     for filename, headings in NARRATIVE_SECTIONS.items():
         narrative = (root / filename).read_text(encoding="utf-8")
         paragraphs = [

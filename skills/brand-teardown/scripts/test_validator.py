@@ -482,6 +482,21 @@ class BrandValidatorTests(unittest.TestCase):
             errors = validate(root)
             self.assertTrue(any("README.md must contain the portable command" in error for error in errors), errors)
 
+    def test_readme_rejects_appended_absolute_skill_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "brand-teardown"
+            write_fixture(root)
+            path = root / "README.md"
+            path.write_text(
+                path.read_text(encoding="utf-8")
+                + "\n`python3 /machine/skills/brand-teardown/scripts/render_handoff.py .`\n"
+                + "`python3 C:\\machine\\skills\\brand-teardown\\scripts\\validate_brand_teardown.py .`\n",
+                encoding="utf-8",
+            )
+            errors = validate(root)
+            self.assertTrue(any("absolute command path to render_handoff.py" in error for error in errors), errors)
+            self.assertTrue(any("absolute command path to validate_brand_teardown.py" in error for error in errors), errors)
+
     def test_actionable_narrative_requires_finding_reconciliation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "brand-teardown"
@@ -490,6 +505,23 @@ class BrandValidatorTests(unittest.TestCase):
             path.write_text(path.read_text(encoding="utf-8") + "\nThe project should replace its category line.\n", encoding="utf-8")
             errors = validate(root)
             self.assertTrue(any("contains actionable language" in error for error in errors), errors)
+
+    def test_actionable_narrative_allows_mapped_and_context_only_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "brand-teardown"
+            coverage = base_coverage()
+            coverage["narrative_reconciliation"].append({
+                "location": "04-message-offer-and-customer-journey.md — additional context",
+                "finding_ids": [],
+                "non_actionable_explanation": "This row records supporting journey context only.",
+            })
+            write_fixture(root, coverage=coverage)
+            path = root / "04-message-offer-and-customer-journey.md"
+            path.write_text(
+                path.read_text(encoding="utf-8") + "\nThe project should retain the mapped correction.\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate(root), [])
 
     def test_access_ledger_must_agree_with_channel_facet(self) -> None:
         def mutate(_findings, coverage):
@@ -535,6 +567,16 @@ class BrandValidatorTests(unittest.TestCase):
             sample = coverage["competitor_samples"][0]
             sample["name"] = "Unrelated Benchmark"
             sample["locator"] = "https://unrelated-benchmark.example/"
+
+        self.assert_invalid(mutate, "lacks sample-specific competitor evidence")
+
+    def test_observed_competitor_rejects_different_path_on_same_host(self) -> None:
+        def mutate(findings, coverage):
+            source = next(item for item in findings["evidence_sources"] if item["id"] == "EVID-003")
+            source["locator"] = "https://benchmark.example/other-product"
+            sample = coverage["competitor_samples"][0]
+            sample["name"] = "Unrelated Benchmark"
+            sample["locator"] = "https://benchmark.example/target-product"
 
         self.assert_invalid(mutate, "lacks sample-specific competitor evidence")
 
