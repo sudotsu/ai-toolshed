@@ -24,6 +24,11 @@ seo-teardown      -> seo-revision
 brand-teardown    -> validated implementation handoff
 ```
 
+> [!IMPORTANT]
+> **The five skills aren't one pipeline with irrelevant stages; they're independent audits you choose between.**
+>
+> The arrows above pair a teardown with the skill that implements its findings. They do not mean a project runs through all five. A terminal agent has no SEO surface, so `seo-teardown` never applies to it; a static marketing site has no CLI surface for `project-teardown` to exercise. Pick the audit that matches what you are actually asking about, and ignore the rest.
+
 The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, and verify the resulting state without claiming unproven outcomes.
 No `brand-revision` skill is implemented yet; `brand-teardown` defines the evidence and authority boundary a future revision workflow must preserve.
 
@@ -42,11 +47,46 @@ ai-toolshed/
 
 Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
 
-## Install for Codex CLI or the IDE extension
+## Install
 
-Codex discovers user-level skills under `$HOME/.agents/skills`. Install skills on the same host where the Codex runtime runs: a skill copied inside WSL is not visible to a Windows IDE extension, and vice versa.
+Every skill in this repository is written to the Claude-standard `SKILL.md` frontmatter contract (`name` and `description` only) and is dependency-free, so the same bundle installs into either runtime. Install on the same host where the agent runtime actually runs: a skill copied inside WSL is not visible to a Windows IDE extension, and vice versa.
 
-The commands below replace each destination completely so removed repository files cannot remain as stale installed files. Back up local edits inside an installed skill first; replacement deletes them.
+The commands below replace each destination completely, so files removed from the repository cannot survive as stale installed files. Back up local edits inside an installed skill first; replacement deletes them.
+
+```bash
+git clone https://github.com/sudotsu/ai-toolshed
+cd ai-toolshed
+```
+
+### Claude Code
+
+Claude Code discovers user-level skills under `$HOME/.claude/skills`.
+
+```bash
+mkdir -p "$HOME/.claude/skills"
+for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown; do
+  rm -rf -- "$HOME/.claude/skills/$skill"
+  cp -R "skills/$skill" "$HOME/.claude/skills/$skill"
+done
+```
+
+To scope the skills to a single repository instead, copy them into that repository's `.claude/skills/` directory rather than `$HOME`.
+
+Start a new Claude Code session so the skills are discovered, then invoke one by name:
+
+```text
+Use project-teardown to comprehensively evaluate this project.
+Use project-revision to implement the approved teardown findings.
+Use seo-teardown to investigate this site's organic-search opportunity.
+Use seo-revision to implement the approved SEO teardown findings.
+Use brand-teardown to audit this project's brand system without changing it.
+```
+
+Claude Code may also select a skill on its own when a request matches its `description`. The teardown skills are read-only by contract; the revision skills change files only after you approve findings.
+
+### Codex CLI or the IDE extension
+
+Codex discovers user-level skills under `$HOME/.agents/skills`.
 
 From WSL or another POSIX shell:
 
@@ -82,9 +122,9 @@ Use $seo-revision to implement the approved SEO teardown findings.
 Use $brand-teardown to audit this project's brand system without changing it.
 ```
 
-This installation is for Codex only. Cloning or copying this repository does not add these skills to a ChatGPT account.
+### Other agents and platforms
 
-Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
+These install paths cover Claude Code and Codex. Cloning or copying this repository does not add these skills to a ChatGPT or Claude.ai account. Read each skill's `SKILL.md` before adapting it to another agent: capabilities, authority boundaries, and packaging conventions differ.
 
 ## What's coming next
 
