@@ -533,7 +533,9 @@ def codex_skill_roots() -> list[Path]:
     roots: list[Path] = [Path.home() / ".agents" / "skills"]
     codex_homes = [Path.home() / ".codex"]
     if os.environ.get("CODEX_HOME"):
-        codex_homes.insert(0, Path(os.environ["CODEX_HOME"]).expanduser())
+        # Resolved because run_upstream_validator passes cwd= to the child
+        # process; a relative root would break once the child changes directory.
+        codex_homes.insert(0, Path(os.environ["CODEX_HOME"]).expanduser().resolve())
     for codex_home in codex_homes:
         roots.extend((codex_home / "skills" / "remote-skills", codex_home / "skills"))
     return roots
@@ -555,7 +557,8 @@ def claude_skill_roots() -> list[Path]:
     """
     homes: list[Path] = [Path.home() / ".claude"]
     if os.environ.get("CLAUDE_CONFIG_DIR"):
-        homes.insert(0, Path(os.environ["CLAUDE_CONFIG_DIR"]).expanduser())
+        # Resolved for the same reason as CODEX_HOME above.
+        homes.insert(0, Path(os.environ["CLAUDE_CONFIG_DIR"]).expanduser().resolve())
     return [home / "skills" for home in homes]
 
 

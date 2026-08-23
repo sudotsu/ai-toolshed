@@ -70,7 +70,9 @@ for skill in project-teardown project-revision seo-teardown seo-revision brand-t
 done
 ```
 
-To scope the skills to a single repository instead, copy them into that repository's `.claude/skills/` directory rather than `$HOME`.
+To scope the skills to a single repository instead, copy them into that repository's `.claude/skills/` directory rather than `$HOME`. If you do that, install `seo-teardown` and `seo-revision` together and invoke the validator with `--seo-teardown-skill .claude/skills/seo-teardown`: `seo-revision` resolves its upstream teardown from installed user-level roots only, and deliberately ignores a project-local copy so that the audited repository cannot supply the rules it is validated against.
+
+If you relocate the Claude configuration directory with `CLAUDE_CONFIG_DIR`, install into `$CLAUDE_CONFIG_DIR/skills` instead of `$HOME/.claude/skills`; the skills honor that variable when resolving each other.
 
 Start a new Claude Code session so the skills are discovered, then invoke one by name:
 
