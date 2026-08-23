@@ -27,7 +27,7 @@ brand-teardown    -> validated implementation handoff
 > [!IMPORTANT]
 > **The five skills aren't one pipeline with irrelevant stages; they're independent audits you choose between.**
 >
-> The arrows above pair a teardown with the skill that implements its findings. They do not mean a project runs through all five. A terminal agent has no SEO surface, so `seo-teardown` never applies to it; a static marketing site has no CLI surface for `project-teardown` to exercise. Pick the audit that matches what you are actually asking about, and ignore the rest.
+> The arrows above pair a teardown with the skill that implements its findings; a revision skill is the back half of a pair and cannot run without its teardown's handoff. What the arrows do not mean is that a project runs through all five. A terminal agent has no SEO surface, so `seo-teardown` never applies to it; a static marketing site has no CLI surface for `project-teardown` to exercise. Pick the audit that matches what you are actually asking about, and ignore the rest.
 
 The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, and verify the resulting state without claiming unproven outcomes.
 No `brand-revision` skill is implemented yet; `brand-teardown` defines the evidence and authority boundary a future revision workflow must preserve.
@@ -70,9 +70,21 @@ for skill in project-teardown project-revision seo-teardown seo-revision brand-t
 done
 ```
 
-Each skill is independent and installs on its own. To scope them to a single repository instead of the whole machine, copy them into that repository's `.claude/skills/` directory rather than `$HOME`.
+### Installing a subset
 
-One flag matters for project-scoped installs. `seo-revision` revalidates its input handoff by running `seo-teardown`'s validator, and it looks for that validator in user-level skill roots only — it ignores a copy inside the repository under audit, so that the audited project cannot supply the rules it is checked against. If both skills live in a project's `.claude/skills/`, pass `--seo-teardown-skill .claude/skills/seo-teardown`. A user-level install needs nothing extra; the skills find each other as siblings.
+The three teardowns are standalone. `project-teardown`, `seo-teardown`, and `brand-teardown` each audit a different surface, and none of them needs the others.
+
+The two revision skills are not standalone, and installing one alone leaves you with a skill that cannot run. `project-revision` and `seo-revision` each implement an approved handoff produced by their teardown, and each begins by running that teardown's own bundled validator against the handoff, refusing to proceed if it fails. `seo-revision` therefore needs `seo-teardown` installed **and** a completed `seo-teardown` handoff to do anything at all. Install each revision skill alongside its teardown:
+
+```text
+project-teardown  + project-revision
+seo-teardown      + seo-revision
+brand-teardown      (standalone; no revision skill exists yet)
+```
+
+### Project-scoped installs
+
+To scope skills to a single repository instead of the whole machine, copy them into that repository's `.claude/skills/` directory rather than `$HOME`. One flag matters there: a revision skill looks for its teardown in user-level skill roots only, ignoring a copy inside the repository under audit, so the audited project cannot supply the rules it is checked against. If both live in a project's `.claude/skills/`, pass `--seo-teardown-skill .claude/skills/seo-teardown`. A user-level install needs nothing extra; the skills find each other as siblings.
 
 If you relocate the Claude configuration directory with `CLAUDE_CONFIG_DIR`, install into `$CLAUDE_CONFIG_DIR/skills` instead of `$HOME/.claude/skills`; the skills honor that variable when resolving each other.
 
