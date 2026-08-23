@@ -1,6 +1,6 @@
 ---
 name: project-revision
-description: Revalidate, plan, implement, and converge an approved project-teardown handoff against the current state of a software project while preserving existing user work and producing an auditable decision, implementation, verification, and readiness record. Use when Codex must create an exhaustive planning-only revision document, resolve owner decisions, implement approved teardown findings in dependency order, continue an existing revision branch or PR, address reviewer feedback, verify risk-sensitive behavior across relevant environments, or prove that every teardown finding and newly discovered regression has a current disposition. Do not use without a project-teardown handoff or as permission to apply stale recommendations blindly.
+description: Revalidate, plan, implement, and converge an approved project-teardown handoff against the current state of a software project while preserving existing user work and producing an auditable decision, implementation, verification, and readiness record. Use when the user asks to create an exhaustive planning-only revision document, resolve owner decisions, implement approved teardown findings in dependency order, continue an existing revision branch or PR, address reviewer feedback, verify risk-sensitive behavior across relevant environments, or prove that every teardown finding and newly discovered regression has a current disposition. Do not use without a project-teardown handoff or as permission to apply stale recommendations blindly.
 ---
 
 # Project Revision
