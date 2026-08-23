@@ -528,6 +528,50 @@ def read_frontmatter_name(path: Path) -> str | None:
     return name.group(1).strip() if name else None
 
 
+def codex_skill_roots() -> list[Path]:
+    """Directories Codex installs user-level skills into, most specific first."""
+    roots: list[Path] = [Path.home() / ".agents" / "skills"]
+    codex_homes = [Path.home() / ".codex"]
+    if os.environ.get("CODEX_HOME"):
+        # Resolved because run_upstream_validator passes cwd= to the child
+        # process; a relative root would break once the child changes directory.
+        codex_homes.insert(0, Path(os.environ["CODEX_HOME"]).expanduser().resolve())
+    for codex_home in codex_homes:
+        roots.extend((codex_home / "skills" / "remote-skills", codex_home / "skills"))
+    return roots
+
+
+def claude_skill_roots() -> list[Path]:
+    """Directories Claude Code installs user-level skills into, most specific first.
+
+    ``CLAUDE_CONFIG_DIR`` relocates the Claude configuration directory, mirroring
+    how ``CODEX_HOME`` is honored for Codex, so it takes precedence over the
+    default ``$HOME/.claude`` when set.
+
+    Project-level ``.claude/skills`` under the current working directory is
+    deliberately excluded. During a revision run the working directory is the
+    audited project, so a stale or divergent copy checked into that project would
+    shadow the skill the operator actually installed and silently validate the
+    handoff against different rules. Pass ``--seo-teardown-skill`` to validate
+    against a project-scoped install explicitly.
+    """
+    homes: list[Path] = [Path.home() / ".claude"]
+    if os.environ.get("CLAUDE_CONFIG_DIR"):
+        # Resolved for the same reason as CODEX_HOME above.
+        homes.insert(0, Path(os.environ["CLAUDE_CONFIG_DIR"]).expanduser().resolve())
+    return [home / "skills" for home in homes]
+
+
+def installed_skill_roots() -> list[Path]:
+    """Every runtime skill root this validator will search, in priority order.
+
+    A revision run must validate against the skill the operator actually
+    installed, so this searches installed roots only -- never a repository
+    checkout. Order matters: the first root holding a matching SKILL.md wins.
+    """
+    return claude_skill_roots() + codex_skill_roots()
+
+
 def locate_seo_teardown(explicit: Path | None = None) -> Path | None:
     if explicit is not None:
         root = explicit.resolve()
@@ -535,13 +579,7 @@ def locate_seo_teardown(explicit: Path | None = None) -> Path | None:
             return root
         return None
     candidates: list[Path] = []
-    roots: list[Path] = [Path.home() / ".agents" / "skills"]
-    codex_homes = [Path.home() / ".codex"]
-    if os.environ.get("CODEX_HOME"):
-        codex_homes.insert(0, Path(os.environ["CODEX_HOME"]).expanduser())
-    for codex_home in codex_homes:
-        roots.extend((codex_home / "skills" / "remote-skills", codex_home / "skills"))
-    for root in roots:
+    for root in installed_skill_roots():
         if not root.is_dir():
             continue
         candidates.extend(root.glob("skill-*/SKILL.md"))
@@ -555,11 +593,22 @@ def locate_seo_teardown(explicit: Path | None = None) -> Path | None:
 def run_upstream_validator(teardown_root: Path, skill_root: Path | None, errors: list[str]) -> Path | None:
     resolved = locate_seo_teardown(skill_root)
     if resolved is None:
-        errors.append("cannot locate an installed skill with name frontmatter seo-teardown")
+        searched = ", ".join(str(root) for root in installed_skill_roots())
+        errors.append(
+            "cannot locate an installed skill with name frontmatter seo-teardown; "
+            "seo-revision validates its input handoff with seo-teardown's own "
+            "validator, so install seo-teardown alongside seo-revision, or pass "
+            f"--seo-teardown-skill PATH (searched: {searched})"
+        )
         return None
     validator = resolved / "scripts" / "validate_seo_teardown.py"
     if not validator.is_file():
-        errors.append("installed seo-teardown is missing scripts/validate_seo_teardown.py")
+        errors.append(
+            f"installed seo-teardown at {resolved} is missing "
+            "scripts/validate_seo_teardown.py; the install is incomplete, so "
+            "reinstall seo-teardown or pass --seo-teardown-skill PATH to a "
+            "complete copy"
+        )
         return None
     try:
         proc = subprocess.run(

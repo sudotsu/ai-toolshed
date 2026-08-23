@@ -1,6 +1,6 @@
 ---
 name: brand-teardown
-description: Perform a rigorous, read-only, evidence-led audit of how a project is understood, trusted, remembered, preferred, and acted on across positioning, audience fit, brand architecture, messaging, offers, proof, claims, voice, visual identity, customer experience, competitors, and channel expression. Use when Codex is asked for a brand teardown, brand audit, positioning or messaging diagnosis, identity consistency review, trust or differentiation analysis, multi-brand architecture review, brand-risk assessment, or an implementation-ready brand findings handoff for a business, product, service, creator, nonprofit, or multi-brand organization.
+description: Perform a rigorous, read-only, evidence-led audit of how a project is understood, trusted, remembered, preferred, and acted on across positioning, audience fit, brand architecture, messaging, offers, proof, claims, voice, visual identity, customer experience, competitors, and channel expression. Use when the user asks for a brand teardown, brand audit, positioning or messaging diagnosis, identity consistency review, trust or differentiation analysis, multi-brand architecture review, brand-risk assessment, or an implementation-ready brand findings handoff for a business, product, service, creator, nonprofit, or multi-brand organization.
 ---
 
 # Brand Teardown

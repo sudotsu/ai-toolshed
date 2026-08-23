@@ -12,7 +12,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from render_revision import render_to_disk
-from validate_seo_revision import AUTHORITY_IDS, locate_seo_teardown, validate
+from validate_seo_revision import (
+    AUTHORITY_IDS,
+    locate_seo_teardown,
+    run_upstream_validator,
+    validate,
+)
 
 
 def locate_seo_teardown_fixture() -> Path | None:
@@ -62,6 +67,34 @@ class FixtureLocationTests(unittest.TestCase):
             with patch(f"{__name__}.locate_seo_teardown", return_value=installed):
                 resolved = locate_seo_teardown_fixture()
         self.assertEqual(Path(__file__).resolve().parents[2] / "seo-teardown", resolved)
+
+
+class UpstreamGuidanceTests(unittest.TestCase):
+    """The pairing is not enforced at install time, so the runtime error is the
+    only place a user learns that seo-revision needs seo-teardown."""
+
+    def test_missing_skill_error_names_both_remedies(self):
+        with patch("validate_seo_revision.locate_seo_teardown", return_value=None):
+            errors: list[str] = []
+            run_upstream_validator(Path("/nonexistent"), None, errors)
+        self.assertEqual(1, len(errors))
+        message = errors[0]
+        self.assertIn("install seo-teardown alongside seo-revision", message)
+        self.assertIn("--seo-teardown-skill", message)
+        self.assertIn("searched:", message)
+
+    def test_incomplete_install_error_names_the_path_and_remedy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            installed = Path(temp) / "seo-teardown"
+            (installed / "scripts").mkdir(parents=True)
+            with patch("validate_seo_revision.locate_seo_teardown", return_value=installed):
+                errors: list[str] = []
+                run_upstream_validator(Path("/nonexistent"), None, errors)
+            self.assertEqual(1, len(errors))
+            message = errors[0]
+            self.assertIn(str(installed), message)
+            self.assertIn("reinstall seo-teardown", message)
+            self.assertIn("--seo-teardown-skill", message)
 
 
 def evidence(
