@@ -593,11 +593,22 @@ def locate_seo_teardown(explicit: Path | None = None) -> Path | None:
 def run_upstream_validator(teardown_root: Path, skill_root: Path | None, errors: list[str]) -> Path | None:
     resolved = locate_seo_teardown(skill_root)
     if resolved is None:
-        errors.append("cannot locate an installed skill with name frontmatter seo-teardown")
+        searched = ", ".join(str(root) for root in installed_skill_roots())
+        errors.append(
+            "cannot locate an installed skill with name frontmatter seo-teardown; "
+            "seo-revision validates its input handoff with seo-teardown's own "
+            "validator, so install seo-teardown alongside seo-revision, or pass "
+            f"--seo-teardown-skill PATH (searched: {searched})"
+        )
         return None
     validator = resolved / "scripts" / "validate_seo_teardown.py"
     if not validator.is_file():
-        errors.append("installed seo-teardown is missing scripts/validate_seo_teardown.py")
+        errors.append(
+            f"installed seo-teardown at {resolved} is missing "
+            "scripts/validate_seo_teardown.py; the install is incomplete, so "
+            "reinstall seo-teardown or pass --seo-teardown-skill PATH to a "
+            "complete copy"
+        )
         return None
     try:
         proc = subprocess.run(
