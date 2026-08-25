@@ -27,7 +27,7 @@ The block below is the canonical draft. Copy it without stylistic rewriting, the
 
 - **ChatGPT Projects:** repeat it because current project instructions apply only inside the project and override global Custom Instructions. Add project-specific behavior after the kernel.
 - **Claude Code:** global, project, and local `CLAUDE.md` files are loaded additively. Do not repeat the kernel by default; restate only an easy-to-miss invariant whose failure would be expensive in that project.
-- **Codex:** global and project `AGENTS.md` guidance forms an ordered instruction chain. Do not repeat the kernel without a concrete project-specific reason; use a closer-scope instruction only to refine or override broader guidance intentionally.
+- **Codex:** selected global and project `AGENTS.override.md` or fallback `AGENTS.md` guidance forms an ordered instruction chain. Do not repeat the kernel without a concrete project-specific reason; use a closer-scope instruction only to refine or override broader guidance intentionally.
 
 Do not put specifications, long rationale, architecture references, or task history into this kernel. Link or retrieve those through the appropriate source instead.
 

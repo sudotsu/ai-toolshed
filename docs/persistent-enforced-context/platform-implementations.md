@@ -6,9 +6,9 @@ Platform behavior changes. The mappings below were verified against official pro
 
 | Concern | ChatGPT | Claude Code | Codex |
 | --- | --- | --- | --- |
-| Global behavioral contract | Custom Instructions = CORE | `~/.claude/CLAUDE.md` = CORE + personal CODING | `~/.codex/AGENTS.md` = compressed CORE + CODING |
-| Persistent user context | Memory / Memory Summary = USER CONTEXT | Auto memory or deliberately maintained user context | Memory features where available; keep behavioral rules in `AGENTS.md` |
-| Project behavior | Project Instructions = PROJECT KERNEL + local rules | Project `CLAUDE.md` / `.claude/CLAUDE.md` = local rules; global files also load | Project and nested `AGENTS.md` = local rules in an ordered chain |
+| Global behavioral contract | Custom Instructions = CORE | `~/.claude/CLAUDE.md` = CORE + personal CODING | `~/.codex/AGENTS.override.md` when present; otherwise `~/.codex/AGENTS.md` = compressed CORE + CODING |
+| Persistent user context | Memory / Memory Summary = USER CONTEXT | Auto memory or deliberately maintained user context | Memory features where available; keep behavioral rules in the selected `AGENTS.override.md` or fallback `AGENTS.md` |
+| Project behavior | Project Instructions = PROJECT KERNEL + local rules | Project `CLAUDE.md` / `.claude/CLAUDE.md` = local rules; global files also load | Selected project and nested `AGENTS.override.md` or fallback `AGENTS.md` files = local rules in an ordered chain |
 | Long reference material | Project Sources | Repository docs, skills, or imported references | Repository docs, skills, or files read on demand |
 | Historical evidence | Chat history, project chats, search, or external episodic retrieval | Session history and retrieval tooling; auto memory is a synthesis, not the transcript | Session history and retrieval tooling; memory is not a provenance-complete archive |
 
@@ -78,7 +78,7 @@ Official source:
 
 ## Codex
 
-Codex's native instruction file is `AGENTS.md`. Current OpenAI documentation describes an ordered chain:
+Codex's native instruction files are `AGENTS.override.md` and `AGENTS.md`, with the override file selected when both are present. Current OpenAI documentation describes an ordered chain:
 
 1. Codex reads `AGENTS.override.md` or `AGENTS.md` from the Codex home directory for global guidance.
 2. From the project root toward the working directory, it reads at most one instruction file per directory.
@@ -87,17 +87,20 @@ Codex's native instruction file is `AGENTS.md`. Current OpenAI documentation des
 Use this composition:
 
 ```text
-~/.codex/AGENTS.md
+~/.codex/AGENTS.override.md (when present)
+or ~/.codex/AGENTS.md
     = CORE + CODING, aggressively compressed
 
-repository AGENTS.md
+repository AGENTS.override.md (when present)
+or repository AGENTS.md
     = project commands, constraints, authority boundaries, and verification
 
-nested AGENTS.md
+nested AGENTS.override.md (when present)
+or nested AGENTS.md
     = rules genuinely specific to that subtree
 ```
 
-Keep general conversation preferences out of project files unless they are necessary to the project's work. Keep machine state out of the global behavioral contract when the runtime can discover it or when it belongs in local context. Search for existing `AGENTS.md` files before adding another so a new file does not accidentally alter instruction precedence.
+Keep general conversation preferences out of project files unless they are necessary to the project's work. Keep machine state out of the global behavioral contract when the runtime can discover it or when it belongs in local context. Search for existing `AGENTS.override.md` and `AGENTS.md` files before adding either so a new file does not accidentally alter instruction precedence.
 
 Official source:
 
