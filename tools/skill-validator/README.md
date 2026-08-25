@@ -95,7 +95,7 @@ For each skill, in order:
 }
 ```
 
-`targets` records the local runtime surfaces this repository validates. It does not claim that copying a local skill installs it into Claude Chat/Cowork or ChatGPT Chat/Work; those surfaces require account sync or plugin distribution as documented in the repository's [runtime portability guide](../../docs/runtime-portability.md).
+`targets` declares the local runtime surfaces the package is intended to support. The validator checks the declared target values, package structure, links, script compilation, and declared tests; it does not start Claude Code, Codex, or either desktop app. Live behavior and discoverability require the separate per-target records in [Behavioral Regression Tests](../../docs/persistent-enforced-context/behavioral-regression-tests.md). Copying a local skill also does not install it into Claude Chat/Cowork or ChatGPT Chat/Work; those surfaces require account sync or plugin distribution as documented in the repository's [runtime portability guide](../../docs/runtime-portability.md).
 
 ### Frontmatter key policies
 

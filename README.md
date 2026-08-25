@@ -58,7 +58,8 @@ The canonical skill packages target both Claude Code and Codex. Their local desk
 | Runtime surface | Personal installation root | Explicit invocation |
 | --- | --- | --- |
 | Claude Code and Claude Desktop Code tab | `$HOME/.claude/skills` | `/skill-name` |
-| Codex CLI, IDE extension, and the Codex surface in the ChatGPT desktop app | `$HOME/.agents/skills` | `$skill-name` |
+| Codex CLI and IDE extension | `$HOME/.agents/skills` | `$skill-name` |
+| ChatGPT desktop app | `$HOME/.agents/skills` | `@skill-name` |
 
 Install on the same host where the runtime executes. A skill copied inside WSL is not visible to a Windows-host desktop session, and vice versa.
 
@@ -103,9 +104,13 @@ Claude Code / Claude Desktop Code:
 /project-teardown comprehensively evaluate this project.
 /project-revision implement the approved teardown findings.
 
-Codex / ChatGPT desktop Codex:
+Codex CLI / IDE extension:
 Use $project-teardown to comprehensively evaluate this project.
 Use $project-revision to implement the approved teardown findings.
+
+ChatGPT desktop app:
+@project-teardown comprehensively evaluate this project.
+@project-revision implement the approved teardown findings.
 ```
 
 Local copies reach the local coding surfaces listed above. They do not automatically install into Claude Chat/Cowork, cloud sessions, or ChatGPT Chat/Work. Those surfaces use account sync or plugin distribution and must be packaged and tested separately. See [Runtime Portability](docs/runtime-portability.md) for the exact boundary and current official sources.

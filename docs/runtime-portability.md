@@ -26,7 +26,7 @@ The shared `SKILL.md` directory format is the portable source. Installation and 
 | Claude Code | `~/.claude/skills/<name>/SKILL.md` | `.claude/skills/<name>/SKILL.md` | `/<name>` | Claude Code CLI sessions on that host |
 | Claude Desktop — Code tab | Same paths as Claude Code for local sessions | Same paths as Claude Code | `/<name>` or the Skills picker | Local Code-tab sessions; SSH sessions read the remote host's personal path |
 | Codex CLI / IDE extension | `$HOME/.agents/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` | `$<name>` | Codex sessions running on that host |
-| ChatGPT desktop app — Codex | Same local Agent Skills source used by Codex | Same repository source used by Codex | `$<name>` or the Skills UI | The Codex coding surface in the desktop app |
+| ChatGPT desktop app | Same local Agent Skills source used by Codex | Same repository source used by Codex | `@<name>` or the Skills UI | ChatGPT sessions using that installed Agent Skill |
 
 Host boundaries matter. A skill installed inside WSL is not automatically installed for a Windows desktop runtime, and a Windows-host copy is not automatically present inside WSL, SSH, or a cloud session.
 

@@ -305,7 +305,7 @@ When CORE, CODING, a project kernel, or platform composition changes, make one i
 - Codex CLI or IDE extension; and
 - the Codex surface in the ChatGPT desktop app.
 
-Do not combine targets merely because they read the same underlying instruction or skill files. Record the exact target, app/runtime version, host, session type, instruction-source paths and digests, and raw outputs above each copy.
+Do not combine targets merely because they read the same underlying instruction or skill files. Record the exact target, app/runtime version, host, session type, installed skill or configuration path, instruction-source paths and digests, exact canonical prompt fixture, and raw outputs above each copy.
 
 | Test | Baseline trials | Candidate trials | Baseline median | Candidate median | Regression? | Evidence note |
 | --- | --- | --- | ---: | ---: | --- | --- |
