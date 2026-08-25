@@ -14,6 +14,19 @@ Platform behavior changes. The mappings below were verified against official pro
 
 No platform collapses all of these concerns safely into one file.
 
+## Desktop surface boundaries
+
+The desktop products contain different surfaces; the app name alone does not identify which instruction system applies.
+
+| Desktop surface | Instruction and skill model |
+| --- | --- |
+| ChatGPT desktop — Chat and Work | ChatGPT Custom Instructions, Memory, Project Instructions, Project Sources, and plugins |
+| ChatGPT desktop — Codex | Codex `AGENTS.override.md` / `AGENTS.md` discovery and Agent Skills; `agents/openai.yaml` supplies optional skill UI metadata |
+| Claude Desktop — Code tab, local session | The same `CLAUDE.md`, `CLAUDE.local.md`, settings, hooks, and local skills used by Claude Code CLI |
+| Claude Desktop — Chat and Cowork | Separate conversational/account surfaces; local `CLAUDE.md` and personal skill folders are not a universal installation mechanism |
+
+Claude Desktop Code can use personal and project skills from the local Claude Code paths. Cowork and cloud sessions use account-enabled or synced skills and apply different execution rules. Similarly, standalone local Agent Skills reach the Codex surface in the ChatGPT desktop app, while Chat and Work receive reusable skills through plugin distribution. See [Runtime Portability](../runtime-portability.md) for exact paths, invocation syntax, packaging boundaries, and validation requirements.
+
 ## ChatGPT
 
 There is no single first-class `CHATGPT.md` equivalent. The practical mapping is:
@@ -34,6 +47,8 @@ OpenAI describes Custom Instructions as direct guidance about what ChatGPT shoul
 
 Current OpenAI documentation also states that project instructions apply only inside their project and override global Custom Instructions. That platform-specific override is why a small repeated [Project Kernel](project-kernel.md) is warranted in ChatGPT even though indiscriminate duplication is harmful elsewhere.
 
+This mapping applies to ChatGPT Chat and Work on the web and in the desktop app. Opening a Codex coding session inside the ChatGPT desktop app changes the applicable coding instructions to the Codex chain documented below.
+
 Use:
 
 - [Ready-to-use ChatGPT configuration](chatgpt-configuration.md) for the global Custom Instructions and Memory Summary;
@@ -45,6 +60,8 @@ Official sources:
 - [ChatGPT Custom Instructions](https://help.openai.com/en/articles/8096356-chat-preferences-for-chatgpt)
 - [Memory FAQ](https://help.openai.com/en/articles/8590148-memory-and-projects)
 - [Projects in ChatGPT](https://help.openai.com/en/articles/10169521)
+- [ChatGPT desktop app](https://developers.openai.com/codex/app)
+- [Build skills](https://developers.openai.com/codex/skills)
 
 ## Claude Code
 
@@ -72,9 +89,13 @@ Claude Code's official guidance currently targets fewer than 200 lines per `CLAU
 
 Auto memory is not the same thing as `CLAUDE.md`: Claude writes and updates it as learned context, while the user writes `CLAUDE.md` to guide behavior. Anthropic explicitly describes both as context rather than hard enforcement. Use permissions, managed settings, hooks, or other deterministic controls when an action must be blocked regardless of model judgment.
 
+For local sessions in the Claude Desktop **Code** tab, the desktop app reads the same `CLAUDE.md`, `CLAUDE.local.md`, settings, hooks, and skill locations as the Claude Code CLI. That parity does not extend blindly to Desktop Chat, Cowork, SSH, WSL, or cloud sessions; each may use a different host, account-synced skills, or a narrower capability set.
+
 Official source:
 
 - [How Claude remembers your project](https://code.claude.com/docs/en/memory)
+- [Claude Code on desktop](https://code.claude.com/docs/en/desktop)
+- [Extend Claude with skills](https://code.claude.com/docs/en/skills)
 
 ## Codex
 

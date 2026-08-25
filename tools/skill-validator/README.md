@@ -44,7 +44,7 @@ The tool depends only on the Python standard library.
 
 For each skill, in order:
 
-1. **Manifest** — `skill-manifest.json` exists and is structurally valid.
+1. **Manifest** — `skill-manifest.json` exists, is structurally valid, and declares every required Claude Code, Codex, and local desktop coding target.
 2. **Directory name** — matches the manifest `name`.
 3. **Required / forbidden files** — every `required_files` entry exists as a
    file; no `forbidden_files` entry is present.
@@ -67,7 +67,12 @@ For each skill, in order:
 {
   "schema_version": 1,                 // required, must be 1
   "name": "seo-teardown",              // required; must match SKILL.md and dir name
-  "runtime": "claude-code",            // optional, informational
+  "targets": [                          // required publication targets
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex"
+  ],
   "required_files": [                  // required, non-empty; each must exist
     "SKILL.md",
     "references/audit-methodology.md",
@@ -89,6 +94,8 @@ For each skill, in order:
   ]
 }
 ```
+
+`targets` declares the local runtime surfaces the package is intended to support. The validator checks the declared target values, package structure, links, script compilation, and declared tests; it does not start Claude Code, Codex, or either desktop app. Live behavior and discoverability require the separate per-target records in [Behavioral Regression Tests](../../docs/persistent-enforced-context/behavioral-regression-tests.md). Copying a local skill also does not install it into Claude Chat/Cowork or ChatGPT Chat/Work; those surfaces require account sync or plugin distribution as documented in the repository's [runtime portability guide](../../docs/runtime-portability.md).
 
 ### Frontmatter key policies
 

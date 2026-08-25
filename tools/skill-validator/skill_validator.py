@@ -5,9 +5,9 @@ A single, generic replacement for the per-skill ``validate_skill.py`` scripts.
 Each skill declares its package contract in a ``skill-manifest.json`` file; this
 tool reads that manifest and runs the same integrity checks against every skill:
 
-1. The manifest is well-formed.
+1. The manifest is well-formed and declares every required runtime target.
 2. Every ``required_files`` entry exists (and no ``forbidden_files`` do).
-3. ``SKILL.md`` frontmatter satisfies the Claude Code spec and the manifest's
+3. ``SKILL.md`` frontmatter satisfies the shared Agent Skills contract and the manifest's
    own rules (name matches, kebab-case, length bounds, no angle brackets, key
    policy).
 4. Every relative Markdown link resolves to a file inside the skill.
@@ -51,6 +51,17 @@ CLAUDE_ALLOWED_KEYS = {
 }
 # Named frontmatter key policies a manifest may select.
 FRONTMATTER_POLICIES = {"name-description-only", "claude-standard"}
+
+# Every published skill must support both coding runtimes and the local coding
+# surface in each vendor's desktop app. Chat/Work/Cowork distribution is a
+# separate plugin or account-sync concern, not a local-skill target.
+REQUIRED_SKILL_TARGETS = frozenset({
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex",
+})
+SUPPORTED_SKILL_TARGETS = REQUIRED_SKILL_TARGETS
 
 DEFAULT_DESCRIPTION_MIN_LENGTH = 40
 DESCRIPTION_MAX_LENGTH = 1024
@@ -101,6 +112,20 @@ def load_manifest(root: Path) -> dict[str, Any]:
     name = data.get("name")
     if not isinstance(name, str) or not name.strip():
         raise ManifestError("manifest name must be a non-empty string")
+
+    targets = data.get("targets")
+    if not isinstance(targets, list) or not targets or not all(
+        isinstance(item, str) and item for item in targets
+    ):
+        raise ManifestError("manifest targets must be a non-empty list of strings")
+    if len(targets) != len(set(targets)):
+        raise ManifestError("manifest targets must not contain duplicates")
+    unknown_targets = sorted(set(targets) - SUPPORTED_SKILL_TARGETS)
+    if unknown_targets:
+        raise ManifestError(f"manifest targets contain unsupported value(s): {unknown_targets}")
+    missing_targets = sorted(REQUIRED_SKILL_TARGETS - set(targets))
+    if missing_targets:
+        raise ManifestError(f"manifest targets are missing required value(s): {missing_targets}")
 
     required = data.get("required_files")
     if not isinstance(required, list) or not required or not all(

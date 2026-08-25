@@ -296,10 +296,37 @@ Use both comparison records. Never combine scores, medians, regression flags, or
 | 11 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
 | 12 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
 
+### Coding-agent and desktop targets
+
+When CORE, CODING, a project kernel, or platform composition changes, make one independent copy of the table below for each affected target:
+
+- Claude Code CLI;
+- Claude Desktop Code tab using a local session;
+- Codex CLI or IDE extension; and
+- the Codex surface in the ChatGPT desktop app.
+
+Do not combine targets merely because they read the same underlying instruction or skill files. Record the exact target, app/runtime version, host, session type, installed skill or configuration path, instruction-source paths and digests, exact canonical prompt fixture, and raw outputs above each copy.
+
+| Test | Baseline trials | Candidate trials | Baseline median | Candidate median | Regression? | Evidence note |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| 1 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 2 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 3 | initial/follow-up scores | initial/follow-up scores | 0–2 / 0–2 | 0–2 / 0–2 | yes/no | Link or path to preserved outputs |
+| 4 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 5 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 6 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 7 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 8 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 9 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 10 | initial/follow-up scores | initial/follow-up scores | 0–2 / 0–2 | 0–2 / 0–2 | yes/no | Link or path to preserved outputs |
+| 11 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+| 12 | raw scores | raw scores | 0–2 | 0–2 | yes/no | Link or path to preserved outputs |
+
 ## Adoption gate
 
 A candidate configuration is ready to adopt only when:
 
+- every affected runtime and desktop target has a separate controlled comparison record;
 - no test produces a new score of `0`;
 - no previously clean behavior regresses materially;
 - improvements are visible in raw outputs rather than only in model self-assessment;

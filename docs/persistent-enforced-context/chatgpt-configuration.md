@@ -4,6 +4,8 @@ The full Custom Instructions and Memory Summary blocks below are the current can
 
 As verified on 2026-08-25, OpenAI documents a 5,000-character Custom Instructions limit for Plus, Pro, Enterprise, Business, and Education accounts, and a 1,500-character limit for Free and Go accounts. The canonical Custom Instructions block is 3,089 characters excluding the code fence, so it fits the former but not the latter. Do not silently truncate it to fit a smaller surface; use and regression-test the separately maintained Free/Go variant below.
 
+These blocks target ChatGPT Chat and Work, including those surfaces in the ChatGPT desktop app. They do not replace the `AGENTS.md` instruction chain used by the Codex coding surface. See [Platform Implementations](platform-implementations.md#desktop-surface-boundaries).
+
 ## Custom Instructions
 
 Use this as the global behavioral contract.

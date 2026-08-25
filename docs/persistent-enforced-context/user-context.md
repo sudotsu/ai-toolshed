@@ -52,6 +52,6 @@ Long material belongs in project sources or repository documentation. Project-sp
 
 ## ChatGPT implementation
 
-The canonical, ready-to-paste ChatGPT Memory Summary is in [Ready-to-use ChatGPT configuration](chatgpt-configuration.md#memory-summary). It deliberately describes durable context and rationale rather than trying to smuggle the entire behavioral contract into memory.
+The canonical, ready-to-paste ChatGPT Memory Summary is in [Ready-to-use ChatGPT configuration](chatgpt-configuration.md#memory-summary). It applies to ChatGPT Chat and Work, including those surfaces in the desktop app; it is not the memory or instruction mechanism for a Codex coding session. It deliberately describes durable context and rationale rather than trying to smuggle the entire behavioral contract into memory.
 
 Evaluate memory changes alongside the instruction configuration. A memory rewrite can alter behavior even when Custom Instructions are unchanged, so record both during [behavioral regression testing](behavioral-regression-tests.md).
