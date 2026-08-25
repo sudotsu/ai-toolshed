@@ -6,9 +6,9 @@ Platform behavior changes. The mappings below were verified against official pro
 
 | Concern | ChatGPT | Claude Code | Codex |
 | --- | --- | --- | --- |
-| Global behavioral contract | Custom Instructions = CORE | `~/.claude/CLAUDE.md` = CORE + personal CODING | `~/.codex/AGENTS.override.md` when present; otherwise `~/.codex/AGENTS.md` = compressed CORE + CODING |
-| Persistent user context | Memory / Memory Summary = USER CONTEXT | Auto memory or deliberately maintained user context | Memory features where available; keep behavioral rules in the selected `AGENTS.override.md` or fallback `AGENTS.md` |
-| Project behavior | Project Instructions = PROJECT KERNEL + local rules | Project `CLAUDE.md` / `.claude/CLAUDE.md` = local rules; global files also load | Selected project and nested `AGENTS.override.md` or fallback `AGENTS.md` files = local rules in an ordered chain |
+| Global behavioral contract | Custom Instructions = CORE | `~/.claude/CLAUDE.md` = CORE + personal CODING | First non-empty: `~/.codex/AGENTS.override.md`, then `~/.codex/AGENTS.md` = compressed CORE + CODING |
+| Persistent user context | Memory / Memory Summary = USER CONTEXT | Auto memory or deliberately maintained user context | Memory features where available; keep behavioral rules in the first non-empty `AGENTS.override.md` or fallback `AGENTS.md` |
+| Project behavior | Project Instructions = PROJECT KERNEL + local rules | Project `CLAUDE.md` / `.claude/CLAUDE.md` = local rules; global files also load | First non-empty project and nested `AGENTS.override.md`, then `AGENTS.md` files = local rules in an ordered chain |
 | Long reference material | Project Sources | Repository docs, skills, or imported references | Repository docs, skills, or files read on demand |
 | Historical evidence | Chat history, project chats, search, or external episodic retrieval | Session history and retrieval tooling; auto memory is a synthesis, not the transcript | Session history and retrieval tooling; memory is not a provenance-complete archive |
 
@@ -78,25 +78,25 @@ Official source:
 
 ## Codex
 
-Codex's native instruction files are `AGENTS.override.md` and `AGENTS.md`, with the override file selected when both are present. Current OpenAI documentation describes an ordered chain:
+Codex's native instruction files are `AGENTS.override.md` and `AGENTS.md`. It selects the first non-empty candidate at each scope, so an absent or empty override falls through to `AGENTS.md`. Current OpenAI documentation describes an ordered chain:
 
-1. Codex reads `AGENTS.override.md` or `AGENTS.md` from the Codex home directory for global guidance.
-2. From the project root toward the working directory, it reads at most one instruction file per directory.
+1. In the Codex home directory, Codex checks `AGENTS.override.md` first and then `AGENTS.md`, using the first non-empty file for global guidance.
+2. From the project root toward the working directory, it checks `AGENTS.override.md`, then `AGENTS.md`, then configured fallback filenames in each directory, and reads at most one non-empty instruction file per directory.
 3. Files closer to the working directory appear later and can override earlier guidance.
 
 Use this composition:
 
 ```text
-~/.codex/AGENTS.override.md (when present)
-or ~/.codex/AGENTS.md
+~/.codex/AGENTS.override.md (when non-empty)
+then ~/.codex/AGENTS.md (when the override is absent or empty)
     = CORE + CODING, aggressively compressed
 
-repository AGENTS.override.md (when present)
-or repository AGENTS.md
+repository AGENTS.override.md (when non-empty)
+then repository AGENTS.md (when the override is absent or empty)
     = project commands, constraints, authority boundaries, and verification
 
-nested AGENTS.override.md (when present)
-or nested AGENTS.md
+nested AGENTS.override.md (when non-empty)
+then nested AGENTS.md (when the override is absent or empty)
     = rules genuinely specific to that subtree
 ```
 
