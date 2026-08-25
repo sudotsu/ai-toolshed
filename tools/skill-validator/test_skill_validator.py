@@ -29,7 +29,12 @@ See [the guide](references/guide.md) for details.
 VALID_MANIFEST = {
     "schema_version": 1,
     "name": "fixture-skill",
-    "runtime": "claude-code",
+    "targets": [
+        "claude-code",
+        "codex",
+        "claude-desktop-code",
+        "chatgpt-desktop-codex",
+    ],
     "required_files": [
         "SKILL.md",
         "references/guide.md",
@@ -139,6 +144,34 @@ class SkillValidatorTests(unittest.TestCase):
         write_manifest(self.root, manifest)
         errors = skill_validator.validate(self.root, run_tests=False)
         self.assertTrue(has(errors, "schema_version must be 1"))
+
+    def test_manifest_missing_targets(self):
+        manifest = dict(VALID_MANIFEST)
+        del manifest["targets"]
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "targets must be a non-empty list"))
+
+    def test_manifest_duplicate_target(self):
+        manifest = dict(VALID_MANIFEST, targets=VALID_MANIFEST["targets"] + ["codex"])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "targets must not contain duplicates"))
+
+    def test_manifest_unsupported_target(self):
+        manifest = dict(VALID_MANIFEST, targets=VALID_MANIFEST["targets"] + ["other-agent"])
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "unsupported value"))
+
+    def test_manifest_missing_required_target(self):
+        manifest = dict(
+            VALID_MANIFEST,
+            targets=[target for target in VALID_MANIFEST["targets"] if target != "claude-code"],
+        )
+        write_manifest(self.root, manifest)
+        errors = skill_validator.validate(self.root, run_tests=False)
+        self.assertTrue(has(errors, "missing required value"))
 
     def test_manifest_empty_required_files(self):
         manifest = dict(VALID_MANIFEST, required_files=[])

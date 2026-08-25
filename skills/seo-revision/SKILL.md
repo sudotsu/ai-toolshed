@@ -1,6 +1,6 @@
 ---
 name: seo-revision
-description: Plan, implement, converge, and verify approved findings from a validated seo-teardown v3 handoff. Use when Codex must revalidate SEO findings against current source and production, resolve owner decisions and authority boundaries, make repository or explicitly authorized external SEO changes, preserve limitations and strengths, verify deployment and search eligibility without inflating rankings or outcomes, run adversarial convergence, or produce a durable SEO revision and experiment handoff.
+description: Plan, implement, converge, and verify approved findings from a validated seo-teardown v3 handoff. Use when the user asks the agent to revalidate SEO findings against current source and production, resolve owner decisions and authority boundaries, make repository or explicitly authorized external SEO changes, preserve limitations and strengths, verify deployment and search eligibility without inflating rankings or outcomes, run adversarial convergence, or produce a durable SEO revision and experiment handoff.
 ---
 
 # SEO Revision

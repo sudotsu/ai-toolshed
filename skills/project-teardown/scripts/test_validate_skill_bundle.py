@@ -27,15 +27,17 @@ class SkillBundleValidatorTests(unittest.TestCase):
         (self.root / "SKILL.md").write_text(
             "---\nname: demo-skill\ndescription: This skill performs a complete evidence-led demonstration workflow for validation.\n---\n\n# Demo Skill\n\nRead [reference](references/example.md).\n",
             encoding="utf-8",
+            newline="\n",
         )
-        (self.root / "references" / "example.md").write_text("# Reference\n", encoding="utf-8")
+        (self.root / "references" / "example.md").write_text("# Reference\n", encoding="utf-8", newline="\n")
         (self.root / "agents" / "openai.yaml").write_text(
             'interface:\n  display_name: "Demo Skill"\n  short_description: "Run a complete demonstration workflow"\n  default_prompt: "Use $demo-skill to run the demonstration workflow."\n',
             encoding="utf-8",
+            newline="\n",
         )
         for name in ("validate_demo.py", "test_demo.py"):
             path = self.root / "scripts" / name
-            path.write_text("#!/usr/bin/env python3\nprint('ok')\n", encoding="utf-8")
+            path.write_text("#!/usr/bin/env python3\nprint('ok')\n", encoding="utf-8", newline="\n")
             path.chmod(0o755)
 
     def test_valid_bundle_passes(self):
@@ -43,7 +45,7 @@ class SkillBundleValidatorTests(unittest.TestCase):
 
     def test_folder_name_must_match(self):
         text = (self.root / "SKILL.md").read_text().replace("name: demo-skill", "name: wrong-name")
-        (self.root / "SKILL.md").write_text(text)
+        (self.root / "SKILL.md").write_text(text, encoding="utf-8", newline="\n")
         self.assertTrue(any("does not match" in error for error in validate(self.root)))
 
     def test_broken_link_fails(self):
@@ -52,12 +54,12 @@ class SkillBundleValidatorTests(unittest.TestCase):
 
     def test_unquoted_openai_value_fails(self):
         text = (self.root / "agents" / "openai.yaml").read_text().replace('display_name: "Demo Skill"', 'display_name: Demo Skill')
-        (self.root / "agents" / "openai.yaml").write_text(text)
+        (self.root / "agents" / "openai.yaml").write_text(text, encoding="utf-8", newline="\n")
         self.assertTrue(any("invalid or unquoted" in error for error in validate(self.root)))
 
     def test_prompt_must_name_skill(self):
         text = (self.root / "agents" / "openai.yaml").read_text().replace("$demo-skill", "$other")
-        (self.root / "agents" / "openai.yaml").write_text(text)
+        (self.root / "agents" / "openai.yaml").write_text(text, encoding="utf-8", newline="\n")
         self.assertTrue(any("must mention $demo-skill" in error for error in validate(self.root)))
 
     def test_python_cache_is_ignored_for_installed_skill(self):

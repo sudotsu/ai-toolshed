@@ -12,7 +12,7 @@ This guide separates six layers that are often collapsed into one oversized inst
 | **CODING** | [Coding-agent contract](coding.md) | Engineering workflow, root-cause diagnosis, tool and change discipline, validation, and release authority. |
 | **USER CONTEXT** | [User context and memory](user-context.md) | Stable facts, preferences, and causal context that help interpret instructions; not the behavioral source of truth. |
 | **PROJECT KERNEL** | [Minimal project kernel](project-kernel.md) | The few invariants worth repeating when a platform's project-local surface can displace global guidance. |
-| **PLATFORM IMPLEMENTATIONS** | [ChatGPT, Claude Code, and Codex](platform-implementations.md) | Where each layer belongs on each platform and how inheritance differs. |
+| **PLATFORM IMPLEMENTATIONS** | [ChatGPT, Claude Code, Codex, and desktop surfaces](platform-implementations.md) | Where each layer belongs on each platform, how inheritance differs, and which desktop surface uses which configuration. |
 | **BEHAVIORAL REGRESSION TESTS** | [Regression suite](behavioral-regression-tests.md) | Reusable adversarial cases, execution protocol, scoring, and comparison gates. |
 
 The current paste-ready ChatGPT Custom Instructions and Memory Summary live in [Ready-to-use ChatGPT configuration](chatgpt-configuration.md).

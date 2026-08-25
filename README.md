@@ -32,9 +32,12 @@ The repository is organized by artifact type:
 
 ```text
 ai-toolshed/
+├── AGENTS.md
+├── CLAUDE.md
 ├── assets/
 ├── docs/
-│   └── persistent-enforced-context/
+│   ├── persistent-enforced-context/
+│   └── runtime-portability.md
 ├── skills/
 │   ├── project-teardown/
 │   ├── project-revision/
@@ -46,51 +49,66 @@ ai-toolshed/
 
 Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
 
-The documentation guides preserve reusable architecture, configuration, and validation knowledge that should not be packaged as a runtime skill. Start with the [documentation index](docs/).
+The documentation guides preserve reusable architecture, configuration, and validation knowledge that should not be packaged as a runtime skill. Start with the [documentation index](docs/). Reusable additions follow the [runtime portability contract](docs/runtime-portability.md): Claude Code and Codex are required targets, and the applicable Claude Desktop and ChatGPT desktop surfaces must be assessed explicitly.
 
-## Install for Codex CLI or the IDE extension
+## Install the skills
 
-Codex discovers user-level skills under `$HOME/.agents/skills`. Install skills on the same host where the Codex runtime runs: a skill copied inside WSL is not visible to a Windows IDE extension, and vice versa.
+The canonical skill packages target both Claude Code and Codex. Their local desktop coding surfaces use the same runtime-specific skill sources:
+
+| Runtime surface | Personal installation root | Explicit invocation |
+| --- | --- | --- |
+| Claude Code and Claude Desktop Code tab | `$HOME/.claude/skills` | `/skill-name` |
+| Codex CLI, IDE extension, and the Codex surface in the ChatGPT desktop app | `$HOME/.agents/skills` | `$skill-name` |
+
+Install on the same host where the runtime executes. A skill copied inside WSL is not visible to a Windows-host desktop session, and vice versa.
 
 The commands below replace each destination completely so removed repository files cannot remain as stale installed files. Back up local edits inside an installed skill first; replacement deletes them.
 
 From WSL or another POSIX shell:
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
-for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown; do
-  rm -rf -- "$HOME/.agents/skills/$skill"
-  cp -R "skills/$skill" "$HOME/.agents/skills/$skill"
+for target_root in "$HOME/.claude/skills" "$HOME/.agents/skills"; do
+  mkdir -p "$target_root"
+  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown; do
+    destination="$target_root/$skill"
+    rm -rf -- "$destination"
+    cp -R "skills/$skill" "$destination"
+  done
 done
 ```
 
 From Windows PowerShell:
 
 ```powershell
-$skillRoot = Join-Path $HOME ".agents\skills"
-New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown") {
-  $destination = Join-Path $skillRoot $skill
-  if (Test-Path -LiteralPath $destination) {
-    Remove-Item -LiteralPath $destination -Recurse -Force
+$skillRoots = @(
+  (Join-Path $HOME ".claude\skills"),
+  (Join-Path $HOME ".agents\skills")
+)
+foreach ($skillRoot in $skillRoots) {
+  New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
+  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown") {
+    $destination = Join-Path $skillRoot $skill
+    if (Test-Path -LiteralPath $destination) {
+      Remove-Item -LiteralPath $destination -Recurse -Force
+    }
+    Copy-Item -LiteralPath (Join-Path "skills" $skill) -Destination $destination -Recurse
   }
-  Copy-Item -LiteralPath (Join-Path "skills" $skill) -Destination $destination -Recurse
 }
 ```
 
-Codex normally detects skill changes automatically. List available skills with `/skills`, or invoke one explicitly with `$`:
+Both runtimes detect skill changes automatically in ordinary local sessions; restart if a new top-level skill directory does not appear. Invoke the installed workflows with the runtime's syntax:
 
 ```text
+Claude Code / Claude Desktop Code:
+/project-teardown comprehensively evaluate this project.
+/project-revision implement the approved teardown findings.
+
+Codex / ChatGPT desktop Codex:
 Use $project-teardown to comprehensively evaluate this project.
 Use $project-revision to implement the approved teardown findings.
-Use $seo-teardown to investigate this site's organic-search opportunity.
-Use $seo-revision to implement the approved SEO teardown findings.
-Use $brand-teardown to audit this project's brand system without changing it.
 ```
 
-This installation is for Codex only. Cloning or copying this repository does not add these skills to a ChatGPT account.
-
-Read each skill's `SKILL.md` before adapting it to another agent or platform. Agent capabilities, authority boundaries, and packaging conventions differ.
+Local copies reach the local coding surfaces listed above. They do not automatically install into Claude Chat/Cowork, cloud sessions, or ChatGPT Chat/Work. Those surfaces use account sync or plugin distribution and must be packaged and tested separately. See [Runtime Portability](docs/runtime-portability.md) for the exact boundary and current official sources.
 
 ## What's coming next
 
@@ -117,7 +135,7 @@ skill-portability
 | `devops-sre` | Environment fingerprinting, change impact analysis, secret-safe infrastructure work, dry runs, rollback planning, and reliability verification. | It already includes a host fingerprint tool, a security/reliability contract, and adversarial infrastructure evals. | Make fingerprinting cross-platform, formalize destructive-action approvals, and test rollback and secret-handling guarantees. |
 | `qa-testing` | Behavior-first test strategy, deterministic async testing, integration boundaries, adversarial coverage review, and regression handoffs. | It already has a testing-strategy reference and evals for flaky, over-mocked, and superficially complete suites. | Relax dogmatic test rules where the evidence calls for it, define bounded test budgets, and validate the resulting coverage record. |
 | `digital-product-launcher` | Live-market research, monetization-model selection, pricing, payment constraints, launch sequencing, landing-page copy, and email funnels. | It already routes through seven substantial reference guides instead of producing generic launch advice. | Remove project- and vertical-specific assumptions, add evidence citation and freshness rules, and separate planning from authorized external actions. |
-| `skill-portability` | Package one workflow for Claude Code, Codex, and Gemini while preserving metadata, tool permissions, MCP configuration, references, and install behavior. | Cross-runtime skill drift is a real recurring problem, and the local tooling demonstrates a viable analyze-transform-validate workflow. | Use a provenance-safe implementation, document each runtime's supported contract, and add round-trip fixtures that detect lossy conversion. |
+| `skill-portability` | Automate analysis, conversion, and packaging beyond the repository's enforced Claude Code/Codex baseline, including Gemini and distributable plugins. | Cross-runtime adapter drift remains a real problem even after the shared skill contract is enforced. | Use a provenance-safe implementation and add round-trip fixtures that detect lossy metadata, permission, MCP, reference, and install conversion. |
 
 ### Publication gate
 
@@ -128,7 +146,7 @@ A roadmap candidate ships only when it is:
 - organized around a concrete workflow and durable output contract;
 - bundled with the references, scripts, templates, or assets required to work independently;
 - covered by realistic evals or regression tests, with validators where deterministic artifacts are part of the contract;
-- portable across the hosts and runtimes it claims to support; and
+- supported by both Claude Code and Codex, with applicable Claude Desktop and ChatGPT desktop surfaces assessed under the [runtime portability contract](docs/runtime-portability.md); and
 - clear on provenance, licensing, current-documentation requirements, and known limitations.
 
 Prompt-only personas, project-private operating instructions, copied vendor bundles, and unverified experiments do not enter the catalog just because they happen to live in a skills directory.
