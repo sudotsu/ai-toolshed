@@ -4,7 +4,7 @@ Contributions should make AI-assisted workflows more dependable, understandable,
 
 ## Before opening a pull request
 
-- Put the project under the matching top-level category: `skills/`, `plugins/`, or `tools/`.
+- Put the project under the matching top-level category: `docs/`, `skills/`, `plugins/`, or `tools/`.
 - Keep each project self-contained and include only files it needs to work.
 - Document prerequisites, installation, usage, and known limitations at the closest appropriate public documentation level.
 - Never commit credentials, private data, generated caches, or machine-specific configuration.
@@ -12,5 +12,7 @@ Contributions should make AI-assisted workflows more dependable, understandable,
 - Keep unrelated changes in separate pull requests.
 
 For skills, preserve the standard `SKILL.md` frontmatter and bundle reusable scripts, references, and assets inside the skill directory. Validate scripts by running them, not only by reading them.
+
+For documentation sets, provide an index from `docs/`, link the set from the repository README when it introduces a first-class concept, keep each canonical configuration in one location, and verify every relative link. Documentation that defines behavioral tests must include an execution and comparison method rather than presenting the cases as examples only.
 
 By contributing, you agree that your contribution is licensed under the repository's MIT License.

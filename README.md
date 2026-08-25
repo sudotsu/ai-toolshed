@@ -10,6 +10,7 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 
 | Type | Project | Purpose |
 | --- | --- | --- |
+| Guide | [Persistent & Enforced Context](docs/persistent-enforced-context/) | Design durable AI instructions, memory, project context, and behavioral regression tests without collapsing them into one oversized prompt. |
 | Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, judge its product and market position, and produce a severity-ordered, implementation-ready teardown. |
 | Skill | [project-revision](skills/project-revision/) | Revalidate an approved project teardown, resolve owner decisions, implement findings in dependency order, and converge the result into an auditable readiness handoff. |
 | Skill | [seo-teardown](skills/seo-teardown/) | Investigate technical SEO, content, authority, local and AI-mediated discovery, measurement, and qualified-conversion opportunity without changing the site. |
@@ -32,15 +33,20 @@ The repository is organized by artifact type:
 ```text
 ai-toolshed/
 ├── assets/
-└── skills/
-    ├── project-teardown/
-    ├── project-revision/
-    ├── seo-teardown/
-    ├── seo-revision/
-    └── brand-teardown/
+├── docs/
+│   └── persistent-enforced-context/
+├── skills/
+│   ├── project-teardown/
+│   ├── project-revision/
+│   ├── seo-teardown/
+│   ├── seo-revision/
+│   └── brand-teardown/
+└── tools/
 ```
 
 Each skill is self-contained and includes its instructions plus any validators, renderers, references, tests, or interface metadata it needs.
+
+The documentation guides preserve reusable architecture, configuration, and validation knowledge that should not be packaged as a runtime skill. Start with the [documentation index](docs/).
 
 ## Install for Codex CLI or the IDE extension
 
