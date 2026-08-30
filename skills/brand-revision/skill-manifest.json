@@ -18,6 +18,9 @@
     "scripts/test_validator.py",
     "scripts/validate_brand_revision.py",
     "scripts/validation_common.py",
+    "scripts/validator_common.py",
+    "scripts/validator_shape.py",
+    "scripts/validator_semantic.py",
     "scripts/validate_skill.py",
     "agents/openai.yaml"
   ],
