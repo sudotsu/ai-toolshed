@@ -9,8 +9,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from render_revision import render_to_disk
+from render_revision import GENERATED_FILES, render_to_disk
 from validation_common import AUTHORITY_IDS, DELIVERY_KEYS, load_json, run_upstream_validator, utc_now
+from validator_common import _shape_teardown
 
 
 def _option(option_id: str, label: str, consequences: str, prerequisites: list[str], reversibility: str) -> dict[str, Any]:
@@ -256,6 +257,14 @@ def main() -> int:
     teardown = args.teardown_directory.resolve()
     revision = args.revision_directory.resolve()
 
+    protected = [revision / "revision.json", *(revision / name for name in GENERATED_FILES)]
+    existing = [path for path in protected if path.exists()]
+    if existing:
+        print("refusing to overwrite an existing brand-revision artifact; use a new target directory:")
+        for path in existing:
+            print(f"- {path}")
+        return 2
+
     if not args.skip_upstream_validation:
         ok, output = run_upstream_validator(teardown)
         if not ok:
@@ -275,6 +284,14 @@ def main() -> int:
         return 2
     if not isinstance(coverage, dict) or coverage.get("schema_version") != "brand-teardown-coverage-v1":
         print("coverage.json must use brand-teardown-coverage-v1")
+        return 2
+
+    shape_errors: list[str] = []
+    _shape_teardown(findings, coverage, shape_errors)
+    if shape_errors:
+        print(f"brand-teardown handoff shape is invalid with {len(shape_errors)} error(s):")
+        for error in shape_errors:
+            print(f"- {error}")
         return 2
 
     revision.mkdir(parents=True, exist_ok=True)
