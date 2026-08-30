@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from validator_shape import _shape_revision
+
 GENERATED_FILES = (
     "README.md",
     "00-decisions-authority-and-scope.md",
@@ -216,9 +218,29 @@ def render_all(data: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def load_renderable_revision(path: Path) -> dict[str, Any]:
+    """Load revision.json and reject syntax or structural defects before rendering."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"could not read revision artifact {path}: {exc}") from None
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid JSON in revision artifact {path}: {exc}") from None
+
+    shape_errors: list[str] = []
+    _shape_revision(data, shape_errors)
+    if shape_errors:
+        details = "\n".join(f"- {error}" for error in shape_errors)
+        raise ValueError(f"cannot render invalid revision artifact {path}:\n{details}")
+    assert isinstance(data, dict)
+    return data
+
+
 def render_to_disk(root: Path) -> None:
     root = root.resolve()
-    data = json.loads((root / "revision.json").read_text(encoding="utf-8"))
+    data = load_renderable_revision(root / "revision.json")
     for name, content in render_all(data).items():
         (root / name).write_text(content.rstrip() + "\n", encoding="utf-8")
 
@@ -227,7 +249,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("revision_directory", type=Path)
     args = parser.parse_args()
-    render_to_disk(args.revision_directory)
+    try:
+        render_to_disk(args.revision_directory)
+    except ValueError as exc:
+        print(exc)
+        return 2
     print(f"Rendered {len(GENERATED_FILES)} brand-revision view(s)")
     return 0
 
