@@ -14,6 +14,19 @@ from validation_common import AUTHORITY_IDS, DELIVERY_KEYS, load_json, run_upstr
 from validator_common import _shape_teardown
 
 
+DECISION_CATEGORY_BY_MODULE = {
+    "business_audience": "audience",
+    "positioning_differentiation": "positioning",
+    "brand_architecture": "brand-architecture",
+    "offer_customer_journey": "offer",
+    "trust_proof_claims": "claim-posture",
+    "visual_identity_recognition": "visual-identity",
+    "channel_expression": "channel-migration",
+    "competitive_landscape": "positioning",
+    "brand_risk_claim_discipline": "claim-posture",
+}
+
+
 def _option(option_id: str, label: str, consequences: str, prerequisites: list[str], reversibility: str) -> dict[str, Any]:
     return {
         "id": option_id,
@@ -33,9 +46,7 @@ def _decision_for(finding: dict[str, Any], number: int) -> dict[str, Any]:
     question = owner_decision if isinstance(owner_decision, str) and owner_decision.strip() else (
         "Resolve the blocked owner or external prerequisite before this finding can proceed: " + "; ".join(str(x) for x in owner_actions)
     )
-    category = "external-authority" if blocked else (
-        "brand-architecture" if finding.get("module") == "brand_architecture" else "other"
-    )
+    category = "external-authority" if blocked else DECISION_CATEGORY_BY_MODULE.get(finding.get("module"), "other")
     recommendation = finding.get("recommendation") if isinstance(finding.get("recommendation"), str) else "Preserve current state until the owner selects an option."
     reversibility = priority.get("reversibility") if isinstance(priority.get("reversibility"), str) else "unknown"
     deps = finding.get("dependencies") if isinstance(finding.get("dependencies"), list) else []
