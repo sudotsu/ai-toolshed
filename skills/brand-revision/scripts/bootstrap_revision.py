@@ -271,18 +271,19 @@ def _write_scaffold_atomically(
 ) -> None:
     """Build every output in a sibling staging directory, then publish it as one rename."""
     parent = revision.parent
-    parent.mkdir(parents=True, exist_ok=True)
-
-    if revision.exists():
-        if not revision.is_dir():
-            raise ValueError(f"revision target exists and is not a directory: {revision}")
-        entries = list(revision.iterdir())
-        if entries:
-            raise ValueError(f"revision target must be absent or empty before bootstrap: {revision}")
-        revision.rmdir()
-
-    staging = Path(tempfile.mkdtemp(prefix=f".{revision.name}.tmp-", dir=parent))
+    staging: Path | None = None
     try:
+        parent.mkdir(parents=True, exist_ok=True)
+
+        if revision.exists():
+            if not revision.is_dir():
+                raise ValueError(f"revision target exists and is not a directory: {revision}")
+            entries = list(revision.iterdir())
+            if entries:
+                raise ValueError(f"revision target must be absent or empty before bootstrap: {revision}")
+            revision.rmdir()
+
+        staging = Path(tempfile.mkdtemp(prefix=f".{revision.name}.tmp-", dir=parent))
         (staging / "evidence").mkdir()
         data = build_scaffold(
             teardown,
@@ -305,7 +306,7 @@ def _write_scaffold_atomically(
             raise
         raise ValueError(f"could not build brand-revision scaffold for {revision}: {type(exc).__name__}: {exc}") from None
     finally:
-        if staging.exists():
+        if staging is not None and staging.exists():
             shutil.rmtree(staging, ignore_errors=True)
 
 
