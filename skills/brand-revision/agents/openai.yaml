@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brand Revision"
+  short_description: "Implement and verify approved brand teardown work"
+  default_prompt: "Use $brand-revision to revalidate this brand teardown, resolve owner decisions and authority, implement approved work, preserve authentic strengths, converge the revision, and produce a verified handoff without overstating perception or business outcomes."

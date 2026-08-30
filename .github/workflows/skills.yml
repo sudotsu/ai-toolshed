@@ -25,6 +25,7 @@ jobs:
           - seo-teardown
           - seo-revision
           - brand-teardown
+          - brand-revision
     env:
       SKILL: ${{ matrix.skill }}
     steps:

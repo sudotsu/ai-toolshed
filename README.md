@@ -16,17 +16,17 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Skill | [seo-teardown](skills/seo-teardown/) | Investigate technical SEO, content, authority, local and AI-mediated discovery, measurement, and qualified-conversion opportunity without changing the site. |
 | Skill | [seo-revision](skills/seo-revision/) | Revalidate and implement approved SEO findings, respect repository and external-action boundaries, verify search eligibility, and produce a durable revision and experiment record. |
 | Skill | [brand-teardown](skills/brand-teardown/) | Audit positioning, differentiation, architecture, messaging, trust, identity, claims, channel expression, and competitive context without changing the audited project. |
+| Skill | [brand-revision](skills/brand-revision/) | Revalidate approved brand findings, resolve owner decisions and authority, implement changes while preserving authentic strengths, and verify expression separately from audience perception and business outcomes. |
 
-The skills include two implemented teardown/revision workflows and one standalone teardown:
+The skills include three implemented teardown/revision workflows:
 
 ```text
 project-teardown  -> project-revision
 seo-teardown      -> seo-revision
-brand-teardown    -> validated implementation handoff
+brand-teardown    -> brand-revision
 ```
 
-The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, and verify the resulting state without claiming unproven outcomes.
-No `brand-revision` skill is implemented yet; `brand-teardown` defines the evidence and authority boundary a future revision workflow must preserve.
+The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, preserve strengths and limitations, and verify the resulting state without claiming unproven outcomes.
 
 The repository is organized by artifact type:
 
@@ -43,7 +43,8 @@ ai-toolshed/
 │   ├── project-revision/
 │   ├── seo-teardown/
 │   ├── seo-revision/
-│   └── brand-teardown/
+│   ├── brand-teardown/
+│   └── brand-revision/
 └── tools/
 ```
 
@@ -70,7 +71,7 @@ From WSL or another POSIX shell:
 ```bash
 for target_root in "$HOME/.claude/skills" "$HOME/.agents/skills"; do
   mkdir -p "$target_root"
-  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown; do
+  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown brand-revision; do
     destination="$target_root/$skill"
     rm -rf -- "$destination"
     cp -R "skills/$skill" "$destination"
@@ -87,7 +88,7 @@ $skillRoots = @(
 )
 foreach ($skillRoot in $skillRoots) {
   New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown") {
+  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown", "brand-revision") {
     $destination = Join-Path $skillRoot $skill
     if (Test-Path -LiteralPath $destination) {
       Remove-Item -LiteralPath $destination -Recurse -Force
@@ -103,14 +104,26 @@ Both runtimes detect skill changes automatically in ordinary local sessions; res
 Claude Code / Claude Desktop Code:
 /project-teardown comprehensively evaluate this project.
 /project-revision implement the approved teardown findings.
+/seo-teardown investigate this site's organic-search opportunity.
+/seo-revision implement the approved SEO teardown findings.
+/brand-teardown audit this project's brand system without changing it.
+/brand-revision implement the approved brand teardown findings.
 
 Codex CLI / IDE extension:
 Use $project-teardown to comprehensively evaluate this project.
 Use $project-revision to implement the approved teardown findings.
+Use $seo-teardown to investigate this site's organic-search opportunity.
+Use $seo-revision to implement the approved SEO teardown findings.
+Use $brand-teardown to audit this project's brand system without changing it.
+Use $brand-revision to implement the approved brand teardown findings.
 
 ChatGPT desktop app:
 @project-teardown comprehensively evaluate this project.
 @project-revision implement the approved teardown findings.
+@seo-teardown investigate this site's organic-search opportunity.
+@seo-revision implement the approved SEO teardown findings.
+@brand-teardown audit this project's brand system without changing it.
+@brand-revision implement the approved brand teardown findings.
 ```
 
 Local copies reach the local coding surfaces listed above. They do not automatically install into Claude Chat/Cowork, cloud sessions, or ChatGPT Chat/Work. Those surfaces use account sync or plugin distribution and must be packaged and tested separately. See [Runtime Portability](docs/runtime-portability.md) for the exact boundary and current official sources.
