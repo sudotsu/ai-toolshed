@@ -184,4 +184,9 @@ def as_list(value: Any) -> list[Any] | None:
 
 
 def unique_strings(value: Any) -> bool:
-    return isinstance(value, list) and all(isinstance(x, str) and x for x in value) and len(value) == len(set(value))
+    return (
+        isinstance(value, list)
+        and bool(value)
+        and all(isinstance(x, str) and x for x in value)
+        and len(value) == len(set(value))
+    )
