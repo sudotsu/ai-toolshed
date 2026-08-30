@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -92,6 +93,30 @@ def load_json(path: Path) -> tuple[Any | None, list[str]]:
         return None, [f"could not read {path.name}: {exc}"]
 
 
+def parse_frontmatter_name(text: str) -> str | None:
+    """Return the single YAML-frontmatter name scalar, without matching body prose."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    try:
+        end = next(i for i in range(1, len(lines)) if lines[i].strip() == "---")
+    except StopIteration:
+        return None
+
+    values: list[str] = []
+    for raw in lines[1:end]:
+        match = re.match(r"^\s*name\s*:\s*(.*?)\s*$", raw)
+        if not match:
+            continue
+        value = match.group(1).strip()
+        if " #" in value:
+            value = value.split(" #", 1)[0].rstrip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values.append(value)
+    return values[0] if len(values) == 1 and values[0] else None
+
+
 def locate_brand_teardown_validator() -> Path | None:
     env = os.environ.get("BRAND_TEARDOWN_SKILL")
     candidates: list[Path] = []
@@ -125,7 +150,7 @@ def locate_brand_teardown_validator() -> Path | None:
             text = skill.read_text(encoding="utf-8")
         except OSError:
             continue
-        if "name: brand-teardown" in text:
+        if parse_frontmatter_name(text) == "brand-teardown":
             return validator
     return None
 
