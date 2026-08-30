@@ -24,6 +24,7 @@ Test at minimum:
 - changed original finding titles/dependencies/acceptance criteria;
 - dependency-order violations;
 - decision-required findings treated as approved without a resolved decision;
+- owner-decision categories collapsed to `other` when the source module has a supported semantic category such as positioning, audience, offer, brand architecture, claim posture, visual identity, or channel migration;
 - retained strengths not preserved;
 - missing or altered preservation constraints;
 - blocked teardown limitations silently removed;
@@ -46,7 +47,7 @@ Use neutral prompts. The agent should:
 - validate the upstream teardown;
 - preserve every finding and claim identity;
 - carry forward material limitations;
-- surface owner-only decisions;
+- surface owner-only decisions with their material semantic category intact;
 - preserve strengths;
 - not infer edit or external authority;
 - produce a deterministic planning artifact;
