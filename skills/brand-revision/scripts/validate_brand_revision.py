@@ -81,15 +81,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("teardown_directory", type=Path)
     parser.add_argument("revision_directory", type=Path)
-    parser.add_argument("--skip-upstream-validation", action="store_true", help="Isolated tests only; never use to claim a production handoff is valid.")
-    parser.add_argument("--skip-markdown-check", action="store_true", help="Testing/debug only.")
     args = parser.parse_args()
-    errors = validate(
-        args.teardown_directory,
-        args.revision_directory,
-        run_upstream=not args.skip_upstream_validation,
-        check_markdown=not args.skip_markdown_check,
-    )
+    errors = validate(args.teardown_directory, args.revision_directory)
     if errors:
         print(f"Brand revision validation failed with {len(errors)} error(s):")
         for error in errors:
