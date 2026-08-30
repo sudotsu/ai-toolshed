@@ -296,7 +296,7 @@ collision_checks, rollback_plan, authority_ids, evidence_ids
 - ID: `ROLLOUT-###`
 - state: `planned|staged|activated|verified|blocked|not-required`
 
-Every high-risk change must map to exactly one rollout. Activation/verification of public or external rollouts requires matching authority and evidence at `published-channel` or higher when public state is claimed.
+Every high-risk change must map to exactly one rollout. `activated` and `verified` are public/external activation states, not local or pre-public staging. Either state requires matching authority plus at least one **direct completed `published-channel`** evidence record. `audience-observation`, `first-party-measurement`, and `business-outcome` evidence may supplement that publication proof but must never substitute for it. Use `staged` for pre-public or local rollout progress.
 
 ## Readiness
 
@@ -347,6 +347,8 @@ Perception `observed|partially-observed` requires completed audience-observation
 
 ## Deterministic rendering and validation
 
+The bootstrap command is create-only for canonical state. It refuses a target that already contains `revision.json` or any generated revision view; use a new target directory instead of overwriting an in-progress handoff.
+
 Run:
 
 ```bash
@@ -355,4 +357,4 @@ python3 <skill-directory>/scripts/validate_brand_revision.py \
   <brand-teardown-directory> <brand-revision-directory>
 ```
 
-The validator reruns the exact installed `brand-teardown` validator unless explicitly skipped for isolated validator tests, verifies the full canonical relationship, and rejects generated Markdown drift.
+`render_revision.py` parses `revision.json` and runs structural revision-shape validation before writing any generated view. Malformed JSON or wrong-shaped canonical state fails with controlled, path-aware errors instead of being coerced into empty tables. The validator reruns the exact installed `brand-teardown` validator unless explicitly skipped for isolated validator tests, verifies the full canonical relationship, and rejects generated Markdown drift.
