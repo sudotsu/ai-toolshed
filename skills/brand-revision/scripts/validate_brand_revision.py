@@ -4,11 +4,34 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Any
 
 from validation_common import load_json, run_upstream_validator
 from validator_common import _shape_teardown
 from validator_shape import _shape_revision
 from validator_semantic import _semantic_validate
+
+
+def _validate_public_rollout_evidence(data: dict[str, Any], errors: list[str]) -> None:
+    """Require direct publication evidence for rollout states that claim activation."""
+    evidence_by_id = {
+        row["id"]: row
+        for row in data["evidence"]
+        if isinstance(row, dict) and isinstance(row.get("id"), str)
+    }
+    for rollout in data["rollouts"]:
+        if rollout["state"] not in {"activated", "verified"}:
+            continue
+        has_direct_publication = any(
+            isinstance(eid, str)
+            and evidence_by_id.get(eid, {}).get("status") == "completed"
+            and evidence_by_id.get(eid, {}).get("level") == "published-channel"
+            for eid in rollout["evidence_ids"]
+        )
+        if not has_direct_publication:
+            errors.append(
+                f"rollout {rollout['id']} state {rollout['state']} requires direct completed published-channel evidence"
+            )
 
 
 def validate(teardown_dir: Path, revision_dir: Path, *, run_upstream: bool = True, check_markdown: bool = True) -> list[str]:
@@ -46,6 +69,7 @@ def validate(teardown_dir: Path, revision_dir: Path, *, run_upstream: bool = Tru
         return shape_errors
 
     assert isinstance(findings, dict) and isinstance(coverage, dict) and isinstance(data, dict)
+    _validate_public_rollout_evidence(data, errors)
     try:
         _semantic_validate(findings, coverage, data, revision_dir, errors, check_markdown)
     except Exception as exc:
