@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +12,7 @@ from pathlib import Path
 from bootstrap_revision import build_scaffold
 from render_revision import render_to_disk
 from validate_brand_revision import validate
+from validation_common import parse_frontmatter_name
 
 
 def teardown_docs() -> tuple[dict, dict]:
@@ -103,9 +106,15 @@ class BrandRevisionValidatorTests(unittest.TestCase):
             if mutate:
                 mutate(data, rd)
             (rd / "revision.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+            markdown_is_current = False
             if rerender:
-                render_to_disk(rd)
-            return validate(td, rd, run_upstream=False, check_markdown=True)
+                try:
+                    render_to_disk(rd)
+                    markdown_is_current = True
+                except ValueError:
+                    # Structural-invalid cases are expected to be rejected before rendering.
+                    pass
+            return validate(td, rd, run_upstream=False, check_markdown=markdown_is_current)
 
     def assert_invalid(self, mutate, contains: str, *, rerender=True) -> None:
         errors = self.validate_data(mutate, rerender=rerender)
@@ -115,7 +124,6 @@ class BrandRevisionValidatorTests(unittest.TestCase):
         self.assertEqual(self.validate_data(), [])
 
     def test_bootstrap_skip_flag_does_not_forge_passed_upstream_validation(self):
-        import subprocess, sys
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             td = root / "brand-teardown"
@@ -134,6 +142,33 @@ class BrandRevisionValidatorTests(unittest.TestCase):
             errors = validate(td, rd, run_upstream=False, check_markdown=True)
             self.assertTrue(any("validator_result must be passed" in e for e in errors), errors)
 
+    def test_bootstrap_refuses_to_overwrite_existing_revision(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            td = root / "brand-teardown"
+            rd = root / "brand-revision"
+            td.mkdir()
+            rd.mkdir()
+            findings, coverage = teardown_docs()
+            (td / "findings.json").write_text(json.dumps(findings), encoding="utf-8")
+            (td / "coverage.json").write_text(json.dumps(coverage), encoding="utf-8")
+            sentinel = rd / "revision.json"
+            sentinel.write_text("owner state must survive\n", encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("bootstrap_revision.py")), str(td), str(rd), "--skip-upstream-validation"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertIn("refusing to overwrite", proc.stdout)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "owner state must survive\n")
+
+    def test_frontmatter_name_must_match_exactly(self):
+        self.assertEqual(parse_frontmatter_name("---\nname: brand-teardown\n---\nbody\n"), "brand-teardown")
+        self.assertEqual(parse_frontmatter_name("---\nname: 'brand-teardown'\n---\n"), "brand-teardown")
+        self.assertEqual(parse_frontmatter_name("---\nname: brand-teardown-v2\n---\n"), "brand-teardown-v2")
+        self.assertIsNone(parse_frontmatter_name("---\ndescription: name: brand-teardown\n---\n"))
+        self.assertIsNone(parse_frontmatter_name("prose only: name: brand-teardown\n"))
+
     def test_missing_finding_rejected(self):
         self.assert_invalid(lambda d, _: d["findings"].pop(), "missing canonical teardown IDs")
 
@@ -142,6 +177,28 @@ class BrandRevisionValidatorTests(unittest.TestCase):
 
     def test_acceptance_nested_type_mutation_fails_cleanly(self):
         self.assert_invalid(lambda d, _: d["findings"][1].__setitem__("acceptance_results", [42]), "must be an object")
+
+    def test_malformed_teardown_coverage_row_is_path_aware(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rd, _ = write_case(Path(temp))
+            coverage = json.loads((td / "coverage.json").read_text(encoding="utf-8"))
+            coverage["access"] = [42]
+            (td / "coverage.json").write_text(json.dumps(coverage), encoding="utf-8")
+            errors = validate(td, rd, run_upstream=False, check_markdown=True)
+            self.assertTrue(any("teardown.coverage.access[0] must be an object" in e for e in errors), errors)
+            self.assertFalse(any("validator internal guard" in e for e in errors), errors)
+
+    def test_renderer_rejects_malformed_json_and_wrong_shape(self):
+        with tempfile.TemporaryDirectory() as temp:
+            rd = Path(temp) / "brand-revision"
+            rd.mkdir()
+            path = rd / "revision.json"
+            path.write_text("{not json\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "invalid JSON in revision artifact"):
+                render_to_disk(rd)
+            path.write_text("{}\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "revision.json missing required key"):
+                render_to_disk(rd)
 
     def test_decision_required_cannot_be_approved_while_pending(self):
         def mutate(d, _):
@@ -210,6 +267,31 @@ class BrandRevisionValidatorTests(unittest.TestCase):
             }]
         self.assert_invalid(mutate, "high-risk change CHG-001 requires a valid rollout_id")
 
+    def test_activated_rollout_requires_direct_published_channel_evidence(self):
+        def mutate(d, _):
+            d["mode"] = "implementation"
+            d["findings"][1]["approval"] = "approved"
+            next(a for a in d["authority_matrix"] if a["id"] == "AUTH-CONTENT-EDIT")["state"] = "authorized"
+            next(a for a in d["authority_matrix"] if a["id"] == "AUTH-PUBLISH")["state"] = "authorized"
+            d["evidence"] = [{
+                "id": "REV-EVID-001", "level": "business-outcome", "method": "business-record-analysis",
+                "status": "completed", "observation": "Revenue record exists after the rollout.",
+                "artifact_path": None, "limitations": [], "observed_at": "2026-08-30T00:00:00Z"
+            }]
+            d["changes"] = [{
+                "id": "CHG-001", "scope": "content", "finding_ids": ["FIND-002"], "convergence_ids": [],
+                "targets": ["README.md"], "description": "High-risk public claim rewrite.",
+                "authority_ids": ["AUTH-CONTENT-EDIT"], "risk_level": "high", "risk_categories": ["claim"],
+                "rollout_id": "ROLLOUT-001", "evidence_ids": []
+            }]
+            d["rollouts"] = [{
+                "id": "ROLLOUT-001", "change_ids": ["CHG-001"], "state": "activated",
+                "inventory": ["README.md"], "representative_samples": ["README.md"],
+                "collision_checks": ["No conflicting public claim found."], "rollback_plan": "Revert CHG-001.",
+                "authority_ids": ["AUTH-PUBLISH"], "evidence_ids": ["REV-EVID-001"]
+            }]
+        self.assert_invalid(mutate, "requires direct completed published-channel evidence")
+
     def test_completed_perception_test_requires_audience_observation(self):
         def mutate(d, _):
             d["perception_tests"] = [{
@@ -225,10 +307,8 @@ class BrandRevisionValidatorTests(unittest.TestCase):
         self.assert_invalid(mutate, "observed business_outcome requires completed business-outcome evidence")
 
     def test_markdown_drift_rejected(self):
-        def mutate(d, rd):
-            pass
         with tempfile.TemporaryDirectory() as temp:
-            td, rd, data = write_case(Path(temp))
+            td, rd, _ = write_case(Path(temp))
             (rd / "03-implementation-ledger.md").write_text("drift\n", encoding="utf-8")
             errors = validate(td, rd, run_upstream=False, check_markdown=True)
             self.assertTrue(any("generated Markdown drift" in e for e in errors), errors)
@@ -243,9 +323,9 @@ class BrandRevisionValidatorTests(unittest.TestCase):
         ]
         for index, mut in enumerate(mutations):
             with self.subTest(index=index):
-                errors = self.validate_data(lambda d, _: mut(d))
+                errors = self.validate_data(lambda d, _, mut=mut: mut(d))
                 self.assertTrue(errors)
-                self.assertFalse(any("unexpected validator exception" in e for e in errors), errors)
+                self.assertFalse(any("validator internal guard" in e for e in errors), errors)
 
 
 if __name__ == "__main__":
