@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "name": "brand-revision",
+  "targets": [
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex"
+  ],
+  "required_files": [
+    "SKILL.md",
+    "references/authority-and-external-actions.md",
+    "references/forward-testing.md",
+    "references/revision-contract.md",
+    "references/verification-and-convergence.md",
+    "scripts/bootstrap_revision.py",
+    "scripts/render_revision.py",
+    "scripts/test_validator.py",
+    "scripts/validate_brand_revision.py",
+    "scripts/validation_common.py",
+    "scripts/validate_skill.py",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}
