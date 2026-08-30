@@ -252,6 +252,28 @@ def _shape_teardown(findings: Any, coverage: Any, errors: list[str]) -> bool:
             _required(item, {"id", "claim", "brand", "state"}, f"teardown.claims[{i}]", errors)
             for key in ("id", "claim", "brand", "state"):
                 _str(item.get(key), f"teardown.claims[{i}].{key}", errors)
-    for key in ("access", "modules", "surface_checks", "material_limitations"):
-        _arr(c.get(key), f"teardown.coverage.{key}", errors)
+
+    for key, idkey in (("access", "category"), ("modules", "id"), ("surface_checks", "id")):
+        rows = _arr(c.get(key), f"teardown.coverage.{key}", errors)
+        if rows is None:
+            continue
+        for i, row in enumerate(rows):
+            item = _obj(row, f"teardown.coverage.{key}[{i}]", errors)
+            if item is None:
+                continue
+            _required(item, {idkey, "status"}, f"teardown.coverage.{key}[{i}]", errors)
+            _str(item.get(idkey), f"teardown.coverage.{key}[{i}].{idkey}", errors)
+            _str(item.get("status"), f"teardown.coverage.{key}[{i}].status", errors)
+            if item.get("next_step") is not None:
+                _str(item.get("next_step"), f"teardown.coverage.{key}[{i}].next_step", errors, nullable=True)
+
+    limits = _arr(c.get("material_limitations"), "teardown.coverage.material_limitations", errors)
+    if limits is not None:
+        for i, row in enumerate(limits):
+            item = _obj(row, f"teardown.coverage.material_limitations[{i}]", errors)
+            if item is None:
+                continue
+            _required(item, {"id", "description", "status", "completion_requirement"}, f"teardown.coverage.material_limitations[{i}]", errors)
+            for field in ("id", "description", "status", "completion_requirement"):
+                _str(item.get(field), f"teardown.coverage.material_limitations[{i}].{field}", errors)
     return not errors
