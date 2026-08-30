@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -259,6 +261,54 @@ def build_scaffold(
     }
 
 
+def _write_scaffold_atomically(
+    teardown: Path,
+    revision: Path,
+    findings: dict[str, Any],
+    coverage: dict[str, Any],
+    *,
+    validator_result: str,
+) -> None:
+    """Build every output in a sibling staging directory, then publish it as one rename."""
+    parent = revision.parent
+    parent.mkdir(parents=True, exist_ok=True)
+
+    if revision.exists():
+        if not revision.is_dir():
+            raise ValueError(f"revision target exists and is not a directory: {revision}")
+        entries = list(revision.iterdir())
+        if entries:
+            raise ValueError(f"revision target must be absent or empty before bootstrap: {revision}")
+        revision.rmdir()
+
+    staging = Path(tempfile.mkdtemp(prefix=f".{revision.name}.tmp-", dir=parent))
+    try:
+        (staging / "evidence").mkdir()
+        data = build_scaffold(
+            teardown,
+            staging,
+            findings,
+            coverage,
+            validator_result=validator_result,
+        )
+        (staging / "revision.json").write_text(
+            json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        render_to_disk(staging)
+        try:
+            os.replace(staging, revision)
+        except OSError as exc:
+            raise ValueError(f"could not atomically publish brand-revision scaffold to {revision}: {exc}") from None
+    except Exception as exc:
+        if isinstance(exc, ValueError):
+            raise
+        raise ValueError(f"could not build brand-revision scaffold for {revision}: {type(exc).__name__}: {exc}") from None
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("teardown_directory", type=Path)
@@ -305,14 +355,18 @@ def main() -> int:
             print(f"- {error}")
         return 2
 
-    revision.mkdir(parents=True, exist_ok=True)
-    (revision / "evidence").mkdir(exist_ok=True)
-    data = build_scaffold(
-        teardown, revision, findings, coverage,
-        validator_result="skipped-for-isolated-test" if args.skip_upstream_validation else "passed",
-    )
-    (revision / "revision.json").write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    render_to_disk(revision)
+    try:
+        _write_scaffold_atomically(
+            teardown,
+            revision,
+            findings,
+            coverage,
+            validator_result="skipped-for-isolated-test" if args.skip_upstream_validation else "passed",
+        )
+    except ValueError as exc:
+        print(exc)
+        return 2
+
     print(f"Created brand-revision planning scaffold at {revision}")
     return 0
 
