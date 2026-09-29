@@ -65,4 +65,4 @@ See [verification and delivery](references/verification-and-delivery.md) for the
 
 Use [the handoff template](assets/handoff-template.md), populated with **observed facts**: viewer entry point and outcome, check results, demo-only behavior, actual branch/PR/preview state, starting revision, production impact, specific rollback including external side effects, and at most one owner decision. Keep implementation and release readiness distinct. A PR being closed does not delete a preview or revert an external mutation.
 
-For maintenance, use [behavioral regression fixtures](references/behavioral-fixtures.md). A structural validator does not verify actual agent conduct. The [package README](README.md) documents runtime and installation boundaries.
+For maintenance, use [behavioral regression fixtures](references/behavioral-fixtures.md) and preserve independent [runtime validation evidence](references/runtime-validation.md). A structural validator does not verify actual agent conduct. The [package README](README.md) documents runtime and installation boundaries.
