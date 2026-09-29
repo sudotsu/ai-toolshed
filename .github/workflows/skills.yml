@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         skill:
+          - rapid-prototype
           - project-teardown
           - project-revision
           - seo-teardown
@@ -83,8 +84,8 @@ jobs:
           elif [ -f scripts/validate_skill.py ]; then
             python scripts/validate_skill.py .
           else
-            echo "::error::$SKILL has no bundle validator"
-            exit 1
+            # New skills use the shared validator; no duplicate copies.
+            python ../../tools/skill-validator/skill_validator.py .
           fi
 
       - name: Regression suite
