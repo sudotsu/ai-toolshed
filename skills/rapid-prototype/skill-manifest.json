@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "name": "rapid-prototype",
+  "targets": [
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex"
+  ],
+  "required_files": [
+    "SKILL.md",
+    "README.md",
+    "agents/openai.yaml",
+    "assets/handoff-template.md",
+    "references/behavioral-fixtures.md",
+    "scripts/test_skill_contract.py"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 60
+    }
+  ]
+}
