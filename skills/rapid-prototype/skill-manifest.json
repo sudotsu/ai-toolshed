@@ -7,12 +7,22 @@
     "claude-desktop-code",
     "chatgpt-desktop-codex"
   ],
+  "target_verification": {
+    "claude-code": "unverified",
+    "codex": "unverified",
+    "claude-desktop-code": "unverified",
+    "chatgpt-desktop-codex": "unverified"
+  },
+  "target_verification_register": "references/runtime-validation.md",
   "required_files": [
     "SKILL.md",
     "README.md",
     "agents/openai.yaml",
     "assets/handoff-template.md",
+    "references/decision-playbook.md",
+    "references/verification-and-delivery.md",
     "references/behavioral-fixtures.md",
+    "references/runtime-validation.md",
     "scripts/test_skill_contract.py"
   ],
   "forbidden_files": [],
