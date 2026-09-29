@@ -34,7 +34,7 @@ class RapidPrototypeContract(unittest.TestCase):
 
     def test_all_eight_behavioral_prompts_exist(self):
         content = (ROOT / "references/behavioral-fixtures.md").read_text(encoding="utf-8")
-        self.assertEqual(len(re.findall(r"^## [1-8]\\. ", content, flags=re.MULTILINE)), 8)
+        self.assertEqual(len(re.findall(r"^## [1-8]\. ", content, flags=re.MULTILINE)), 8)
         for term in ("Dirty tree", "Plan-only", "Deployment fails", "Core proof cannot be faked"):
             self.assertIn(term, content)
 
