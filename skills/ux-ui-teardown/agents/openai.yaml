@@ -1,0 +1,13 @@
+interface:
+  display_name: UX/UI Teardown
+  short_description: Journey-first evidence-led UX/UI teardown
+  default_prompt: Use $ux-ui-teardown to perform a read-only, implementation-ready UX/UI audit of this product across user journeys, interaction states, responsive behavior, accessibility, visual hierarchy, trust, and design-system consistency.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

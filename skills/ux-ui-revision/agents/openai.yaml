@@ -1,0 +1,13 @@
+interface:
+  display_name: UX/UI Revision
+  short_description: Revalidate and converge approved UX/UI findings
+  default_prompt: Use $ux-ui-revision to consume a validated UX/UI teardown, revalidate every finding against current state, implement only approved work, preserve working strengths, and verify complete journeys, responsive states, accessibility, and convergence.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
