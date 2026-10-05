@@ -11,12 +11,15 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Type | Project | Purpose |
 | --- | --- | --- |
 | Guide | [Persistent & Enforced Context](docs/persistent-enforced-context/) | Design durable AI instructions, memory, project context, and behavioral regression tests without collapsing them into one oversized prompt. |
+| Skill | [rapid-prototype](skills/rapid-prototype/) | Implement and verify the fastest honest, reversible website/app demo as a vertical slice on an isolated branch and preview. |
 | Skill | [project-teardown](skills/project-teardown/) | Use a software product like a real user, inspect its implementation, judge its product and market position, and produce a severity-ordered, implementation-ready teardown. |
 | Skill | [project-revision](skills/project-revision/) | Revalidate an approved project teardown, resolve owner decisions, implement findings in dependency order, and converge the result into an auditable readiness handoff. |
 | Skill | [seo-teardown](skills/seo-teardown/) | Investigate technical SEO, content, authority, local and AI-mediated discovery, measurement, and qualified-conversion opportunity without changing the site. |
 | Skill | [seo-revision](skills/seo-revision/) | Revalidate and implement approved SEO findings, respect repository and external-action boundaries, verify search eligibility, and produce a durable revision and experiment record. |
 | Skill | [brand-teardown](skills/brand-teardown/) | Audit positioning, differentiation, architecture, messaging, trust, identity, claims, channel expression, and competitive context without changing the audited project. |
 | Skill | [brand-revision](skills/brand-revision/) | Revalidate approved brand findings, resolve owner decisions and authority, implement changes while preserving authentic strengths, and verify expression separately from audience perception and business outcomes. |
+
+The standalone [rapid-prototype](skills/rapid-prototype/) skill is for urgent **implementation and demonstration**, not exhaustive auditing or production launch certification.
 
 The skills include three implemented teardown/revision workflows:
 
@@ -39,6 +42,7 @@ ai-toolshed/
 │   ├── persistent-enforced-context/
 │   └── runtime-portability.md
 ├── skills/
+│   ├── rapid-prototype/
 │   ├── project-teardown/
 │   ├── project-revision/
 │   ├── seo-teardown/
@@ -71,7 +75,7 @@ From WSL or another POSIX shell:
 ```bash
 for target_root in "$HOME/.claude/skills" "$HOME/.agents/skills"; do
   mkdir -p "$target_root"
-  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown brand-revision; do
+  for skill in rapid-prototype project-teardown project-revision seo-teardown seo-revision brand-teardown brand-revision; do
     destination="$target_root/$skill"
     rm -rf -- "$destination"
     cp -R "skills/$skill" "$destination"
@@ -88,7 +92,7 @@ $skillRoots = @(
 )
 foreach ($skillRoot in $skillRoots) {
   New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown", "brand-revision") {
+  foreach ($skill in "rapid-prototype", "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown", "brand-revision") {
     $destination = Join-Path $skillRoot $skill
     if (Test-Path -LiteralPath $destination) {
       Remove-Item -LiteralPath $destination -Recurse -Force
@@ -102,6 +106,7 @@ Both runtimes detect skill changes automatically in ordinary local sessions; res
 
 ```text
 Claude Code / Claude Desktop Code:
+/rapid-prototype build and verify the smallest usable demo; leave main untouched.
 /project-teardown comprehensively evaluate this project.
 /project-revision implement the approved teardown findings.
 /seo-teardown investigate this site's organic-search opportunity.
@@ -110,6 +115,7 @@ Claude Code / Claude Desktop Code:
 /brand-revision implement the approved brand teardown findings.
 
 Codex CLI / IDE extension:
+Use $rapid-prototype to build and verify an isolated, reversible demo now.
 Use $project-teardown to comprehensively evaluate this project.
 Use $project-revision to implement the approved teardown findings.
 Use $seo-teardown to investigate this site's organic-search opportunity.
@@ -118,6 +124,7 @@ Use $brand-teardown to audit this project's brand system without changing it.
 Use $brand-revision to implement the approved brand teardown findings.
 
 ChatGPT desktop app:
+@rapid-prototype build the smallest verifiable website/app demo now.
 @project-teardown comprehensively evaluate this project.
 @project-revision implement the approved teardown findings.
 @seo-teardown investigate this site's organic-search opportunity.

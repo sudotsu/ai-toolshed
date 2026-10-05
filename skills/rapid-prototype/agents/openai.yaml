@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rapid Prototype"
+  short_description: "Build a demonstrable slice fast and reversibly"
+  default_prompt: "Use $rapid-prototype to implement and verify the smallest viable website/app demo now, provide an inspectable result and rollback path, and keep main untouched unless explicitly authorized."
