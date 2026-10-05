@@ -31,7 +31,7 @@ Select journeys using project evidence. Prioritize:
 
 Do not fabricate edge journeys only to increase finding count.
 
-## State matrix
+## State model
 
 For each applicable interactive pattern, inspect:
 
@@ -48,20 +48,26 @@ For each applicable interactive pattern, inspect:
 | error | what happened, what to do next, preserved work |
 | success | confirmation and next state |
 | destructive | consequence, confirmation, undo/recovery |
-| timeout/offline | retained state and safe retry |
+| offline_timeout | retained state and safe retry |
+
+The state name is only a class. Record concrete state **instances** separately when the trigger, journey step, surface, consequence, or recovery path differs. Do not use one generic `error` observation to stand in for every error state in the product. Do not use one loading observation to prove every loading transition.
+
+A journey's `required_states` lists the classes material to that journey. The state coverage ledger proves which exact instances were exercised and under which viewport/input conditions.
 
 ## Responsive and input matrix
 
 Use evidence, not device folklore. Record actual viewport dimensions and input method.
 
-Minimum web sampling for a complete public-site audit:
+Minimum web sampling for every primary/high-risk journey in a complete interactive-web audit:
 
-- one narrow mobile viewport;
-- one desktop viewport;
-- keyboard navigation through every primary journey;
-- pointer/touch through every primary journey.
+- one narrow mobile viewport linked to that journey;
+- one desktop viewport linked to that journey;
+- keyboard navigation through the journey;
+- pointer/touch through the journey.
 
-Add intermediate breakpoints when navigation, grid, form, overlay, or sticky behavior changes.
+Add intermediate breakpoints when navigation, grid, form, overlay, sticky behavior, content density, or task sequencing changes.
+
+Coverage is journey-specific. A mobile homepage observation cannot satisfy the mobile requirement for a checkout flow that was tested only on desktop. A keyboard run of global navigation cannot satisfy keyboard coverage for a form that was only exercised with a pointer.
 
 ## Severity
 
@@ -93,12 +99,12 @@ Keep it independent from confidence.
 
 Aesthetic preference may identify polish opportunities, but cannot exceed `low` severity unless a separate evidence basis demonstrates a stronger user/system consequence.
 
-Examples:
-
 Bad:
+
 > The hero feels dated.
 
 Better:
+
 > At 390px, three equally weighted actions appear before the service explanation; the primary quote path is not visually distinguishable. This is observed hierarchy/decision friction, not a claim that the aesthetic is "dated."
 
 ## Automated tooling
