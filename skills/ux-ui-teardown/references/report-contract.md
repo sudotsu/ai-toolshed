@@ -79,7 +79,9 @@ IDs: `JOURNEY-###`.
 
 `status`: `passed|failed|partial|blocked|not_tested`.
 
-Each primary/high-risk journey must have evidence and at least one viewport and input mode.
+`required_states` contains state classes from the canonical state taxonomy below. It describes the states the journey materially requires; `coverage.json.state_coverage` records the concrete instances that were actually exercised.
+
+Each primary/high-risk journey must have evidence and at least one viewport and input mode. A complete interactive-web audit has stricter per-journey coverage requirements in the completion gate below.
 
 ### findings
 
@@ -160,8 +162,8 @@ Rules:
 - `strength` requires informational severity and `retained_strength`.
 - every non-strength actionable finding requires a non-empty recommendation, acceptance criteria, and verification methods;
 - every finding must trace to at least one evidence source and one journey;
-- dependencies/conflicts must reference existing findings; dependencies must be acyclic; conflicts symmetric.
-- `user_consequence` must distinguish observed outcome from reasoned risk in its wording when user research/measurement is absent.
+- dependencies/conflicts must reference existing findings; dependencies must be acyclic; conflicts symmetric;
+- `user_consequence` must distinguish observed outcome from reasoned risk when user research/measurement is absent.
 
 ## coverage.json
 
@@ -176,7 +178,7 @@ input_modes, state_coverage, material_limitations, validator
 
 ### access
 
-Include:
+Include exactly:
 
 ```text
 source_repository
@@ -195,7 +197,7 @@ category, status, material_to_comprehensive, evidence_ids, limitations, next_ste
 
 Status: `available|partial|blocked|not_applicable`.
 
-Material partial/blocked access forces `provisional`.
+Material partial/blocked access forces `provisional` when that access is required for a comprehensive conclusion.
 
 ### modules
 
@@ -226,21 +228,23 @@ id, materiality, status, finding_ids, evidence_ids, limitations
 
 ### viewports
 
-Each:
+Each viewport is one concrete sampled size:
 
 ```text
 id, label, width, height, class, status, journey_ids, evidence_ids, limitations
 ```
 
+IDs: `VIEW-###`.
+
 `class`: `narrow_mobile|wide_mobile|tablet|desktop|large_desktop|other`.
 
 `status`: `observed|blocked|not_applicable`.
 
-A complete interactive web audit requires at least one observed `narrow_mobile` and one observed `desktop` viewport.
+An observed viewport must reference evidence and every journey actually exercised at that size. Journey and viewport references must be reciprocal.
 
 ### input_modes
 
-Each:
+Each input-mode row:
 
 ```text
 mode, status, journey_ids, evidence_ids, limitations
@@ -248,21 +252,54 @@ mode, status, journey_ids, evidence_ids, limitations
 
 `mode`: `pointer_touch|keyboard|screen_reader|voice_switch|other`.
 
-A complete interactive web audit requires observed `pointer_touch` and `keyboard` coverage unless genuinely not applicable.
+`status`: `observed|blocked|not_applicable`.
+
+Use one row per mode. An observed row must reference evidence and every journey actually exercised with that mode.
 
 ### state_coverage
 
-Each:
+`required_states` on a journey is a taxonomy. `state_coverage` is an **instance ledger**. Never collapse materially different instances merely because they share the same state class. For example, a stale-roster checkout error and a payment-verification error are separate `STATE-###` rows even though both use `state: error`.
+
+Each state instance:
 
 ```text
-state, status, journey_ids, evidence_ids, limitations
+id, state, label, journey_id, step, surface_target, trigger, status,
+viewport_ids, input_modes, evidence_ids, finding_ids, limitations
 ```
 
-States may include `default`, `focus`, `hover`, `active`, `disabled`, `loading`, `empty`, `validation`, `error`, `success`, `destructive`, `offline_timeout`.
+IDs: `STATE-###`.
+
+`state`:
+
+```text
+default
+focus
+hover
+active
+disabled
+loading
+empty
+validation
+error
+success
+destructive
+offline_timeout
+```
+
+`status`: `observed|blocked|not_applicable`.
+
+For observed state instances:
+
+- `label`, `step`, `surface_target`, and `trigger` identify the exact state variant;
+- `viewport_ids`, `input_modes`, and `evidence_ids` are non-empty;
+- every referenced viewport and input mode must itself be observed for the same journey;
+- `finding_ids` may be empty, but when present must reference findings caused by or materially expressed in that state.
+
+Multiple observed instances of the same state class are valid and expected when they represent different steps, surfaces, triggers, or outcomes.
 
 ### material_limitations
 
-Each:
+Each limitation:
 
 ```text
 id, description, status, completion_requirement, affected_module_ids
@@ -276,15 +313,22 @@ ID: `LIMIT-###`. Status: `open|resolved`.
 name, status, validated_at
 ```
 
-A generated artifact must not claim `complete` when the validator status is not `passed`.
+A generated artifact must not claim `complete` when validator status is not `passed`.
 
 ## Completion gate
 
 `complete` is invalid when any of the following is true:
 
 - an open material limitation exists;
-- defining/high module is `partial|blocked|not_tested`;
+- a defining/high module is `partial|blocked|not_tested`;
 - a primary/high-risk journey is `partial|blocked|not_tested`;
-- required mobile/desktop coverage is missing for an interactive web project;
-- pointer/keyboard coverage is missing for an interactive web project;
+- any declared `required_states` class for a primary/high-risk journey lacks at least one observed `STATE-###` instance tied to that journey;
+- for an interactive web project, any primary/high-risk journey lacks an observed `narrow_mobile` viewport **for that journey**;
+- for an interactive web project, any primary/high-risk journey lacks an observed `desktop` viewport **for that journey**;
+- for an interactive web project, any primary/high-risk journey lacks observed `pointer_touch` **for that journey**;
+- for an interactive web project, any primary/high-risk journey lacks observed `keyboard` **for that journey**;
+- a journey declares a viewport/input mode that has no reciprocal coverage row;
+- an observed state references a viewport/input mode that was not observed for the same journey;
 - material public production state is part of the audit and production revision is unverified.
+
+Global coverage elsewhere in the product never satisfies a material journey's completion gate. If the primary checkout journey was tested only on desktop, a separate mobile observation of the homepage does not make checkout responsive coverage complete.
