@@ -11,6 +11,8 @@ schema_version, mode, source, baseline, authority, findings,
 decisions, convergence, readiness
 ```
 
+Before bootstrap or validation, run the exact `ux-ui-teardown` validator against the source handoff. Schema names and digests do not substitute for upstream semantic validation.
+
 ## mode
 
 `planning-only|implementation|continuation`.
@@ -94,6 +96,14 @@ pending|approved|deferred|rejected|accepted_risk|not_applicable
 not_started|planned|in_progress|fixed|preserved|blocked|deferred|rejected|accepted_risk|not_applicable
 ```
 
+`preservation_status`:
+
+```text
+pending|preserved|regressed|approved_tradeoff|not_applicable
+```
+
+Use `pending` until current-state evidence has checked the applicable preservation constraints. `approved_tradeoff` requires explicit approval. A planning scaffold may therefore show `implementation_status: preserved` for a retained-strength row while leaving `preservation_status: pending` until revalidation proves the current state still preserves it.
+
 Each `acceptance_results` row:
 
 ```text
@@ -108,10 +118,12 @@ Rules:
 - fixed requires `approval: approved`;
 - fixed requires every applicable acceptance criterion passed;
 - retained-strength findings use `preserved` unless an explicit approved tradeoff exists;
+- `approved_tradeoff` preservation requires `approval: approved`;
 - `changed_targets` must be empty in planning-only mode;
 - current evidence is required for confirmed/changed/already-resolved;
 - accepted risk requires `approval: accepted_risk`;
-- implementation cannot imply external publication/deployment without matching authority.
+- implementation cannot imply external publication/deployment without matching authority;
+- `overall: ready` requires every finding's preservation status to be terminal: `preserved|approved_tradeoff|not_applicable`.
 
 ## decisions
 
@@ -183,6 +195,7 @@ business_outcome
 - no unresolved critical/high/medium convergence defect unless accepted risk;
 - every open/decision-required material teardown finding has a terminal approved disposition;
 - every retained strength preserved or explicitly traded off;
+- every finding has terminal preservation status (`preserved|approved_tradeoff|not_applicable`);
 - no false publication/deployment claim;
 - limitations do not contradict readiness.
 
