@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "name": "ux-ui-teardown",
+  "targets": [
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex"
+  ],
+  "required_files": [
+    "SKILL.md",
+    "references/audit-methodology.md",
+    "references/experience-and-visual-craft.md",
+    "references/competitive-benchmarking.md",
+    "references/report-contract.md",
+    "references/forward-testing.md",
+    "scripts/render_handoff.py",
+    "scripts/test_malformed_input.py",
+    "scripts/test_validator.py",
+    "scripts/validate_ux_ui_teardown.py",
+    "scripts/validate_skill.py",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}
