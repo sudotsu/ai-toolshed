@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse,hashlib,json,re
 from pathlib import Path
 
+from validation_common import run_upstream_validator
+
 AUTHORITY={"repository_edit","design_file_edit","cms_edit","public_content_publish","production_deploy","external_profile_change","analytics_mutation","paid_purchase","third_party_outreach","merge"}
 REVALIDATION={"confirmed","changed","stale","already_resolved","not_applicable","blocked"}
 APPROVAL={"pending","approved","deferred","rejected","accepted_risk","not_applicable"}
 IMPLEMENTATION={"not_started","planned","in_progress","fixed","preserved","blocked","deferred","rejected","accepted_risk","not_applicable"}
+PRESERVATION={"pending","preserved","regressed","approved_tradeoff","not_applicable"}
 ACC={"passed","failed","pending","blocked","not_applicable"}
 LEVELS=["source_inspection","rendered_experience","assistive_technology","published_experience","user_observation","first_party_measurement","business_outcome"]
 
@@ -21,8 +24,13 @@ def load(path,errors):
     try:return json.loads(path.read_text(encoding="utf-8"))
     except Exception as e: errors.append(f"{path.name} cannot load: {e}"); return None
 
-def validate(teardown:Path,revision:Path):
+def validate(teardown:Path,revision:Path,*,run_upstream:bool=True):
     errors=[]
+    if run_upstream:
+        ok, output = run_upstream_validator(teardown)
+        if not ok:
+            return ["ux-ui-teardown upstream validation failed: " + output]
+
     td=load(teardown/"findings.json",errors); cv=load(teardown/"coverage.json",errors); rv=load(revision/"revision.json",errors)
     if not obj(td) or not obj(cv) or not obj(rv): return errors or ["canonical documents must be objects"]
     if td.get("schema_version")!="ux-ui-teardown-v1": errors.append("upstream findings schema mismatch")
@@ -66,6 +74,7 @@ def validate(teardown:Path,revision:Path):
         if row.get("revalidation") not in REVALIDATION: errors.append(f"{fid}.revalidation invalid")
         if row.get("approval") not in APPROVAL: errors.append(f"{fid}.approval invalid")
         if row.get("implementation_status") not in IMPLEMENTATION: errors.append(f"{fid}.implementation_status invalid")
+        if row.get("preservation_status") not in PRESERVATION: errors.append(f"{fid}.preservation_status invalid")
         for k in ("current_evidence","changed_targets","acceptance_results","verification_evidence"):
             if not isinstance(row.get(k),list): errors.append(f"{fid}.{k} must be list")
         if row.get("revalidation") in {"confirmed","changed","already_resolved"} and not row.get("current_evidence"): errors.append(f"{fid} revalidation requires current evidence")
@@ -79,6 +88,8 @@ def validate(teardown:Path,revision:Path):
         if mode=="planning-only" and row.get("changed_targets"): errors.append(f"{fid} planning-only cannot record changed targets")
         if srcf.get("kind")=="strength" and row.get("implementation_status")!="preserved":
             errors.append(f"{fid} retained strength must remain preserved unless represented as an explicit owner-approved tradeoff")
+        if row.get("preservation_status")=="approved_tradeoff" and row.get("approval")!="approved":
+            errors.append(f"{fid} approved_tradeoff requires approved")
     if set(source_findings)!=seen: errors.append("revision must contain every teardown finding exactly once")
 
     conv=rv.get("convergence")
@@ -110,6 +121,8 @@ def validate(teardown:Path,revision:Path):
             for row in rows:
                 if obj(row) and row.get("implementation_status") in {"not_started","planned","in_progress","blocked"}:
                     errors.append(f"overall ready has incomplete finding {row.get('finding_id')}")
+                if obj(row) and row.get("preservation_status") not in {"preserved","approved_tradeoff","not_applicable"}:
+                    errors.append(f"overall ready has unresolved preservation status for {row.get('finding_id')}")
     return errors
 
 def main():
