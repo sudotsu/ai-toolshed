@@ -18,6 +18,7 @@
     "references/forward-testing.md",
     "scripts/bootstrap_revision.py",
     "scripts/render_revision.py",
+    "scripts/validation_common.py",
     "scripts/validate_ux_ui_revision.py",
     "scripts/test_validator.py",
     "scripts/validate_skill.py"
