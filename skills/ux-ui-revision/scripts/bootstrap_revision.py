@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse, hashlib, json, sys
 from pathlib import Path
 
+from validation_common import run_upstream_validator
+
 AUTHORITY = ["repository_edit","design_file_edit","cms_edit","public_content_publish","production_deploy","external_profile_change","analytics_mutation","paid_purchase","third_party_outreach","merge"]
 
 def digest(path: Path) -> str:
@@ -15,6 +17,12 @@ def main() -> int:
     ap.add_argument("teardown",type=Path); ap.add_argument("revision",type=Path)
     a=ap.parse_args()
     td=a.teardown.resolve(); out=a.revision.resolve()
+
+    ok, upstream_output = run_upstream_validator(td)
+    if not ok:
+        print("ux-ui-teardown upstream validation failed: " + upstream_output, file=sys.stderr)
+        return 1
+
     if out.exists() and any(out.iterdir()):
         print("refusing to overwrite non-empty revision directory",file=sys.stderr); return 1
     findings=json.loads((td/"findings.json").read_text(encoding="utf-8"))
