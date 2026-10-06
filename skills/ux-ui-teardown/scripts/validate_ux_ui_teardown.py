@@ -61,7 +61,7 @@ def validate(root:Path):
     if not obj(f) or not obj(c): return errors or ['canonical files must be objects']
     if f.get('schema_version')!='ux-ui-teardown-v2': errors.append('findings schema_version must be ux-ui-teardown-v2')
     if c.get('schema_version')!='ux-ui-teardown-coverage-v2': errors.append('coverage schema_version must be ux-ui-teardown-coverage-v2')
-    audit=f.get('audit') if obj(f.get('audit')) else {}; 
+    audit=f.get('audit') if obj(f.get('audit')) else {};
     if not audit: errors.append('audit must be object')
     required_audit=['project_name','project_locator','audited_revision','production_locator','production_revision_status','audit_start_date','audit_end_date','review_status','project_type','audience_scope','primary_user_groups','primary_goals','owner_context','competitor_benchmark_required','competitor_benchmark_reason']
     for k in required_audit:
