@@ -57,6 +57,13 @@ def make_source_gap(td: Path, rv: Path):
     assert bootstrap(td, rv) == 0
 
 
+def authorize_repository_edit(data):
+    row = next(item for item in data["authority"] if item["action"] == "repository_edit")
+    row["status"] = "authorized"
+    row["scope"] = ["repository"]
+    row["evidence"] = ["owner authorization"]
+
+
 class Tests(unittest.TestCase):
     def test_bootstrap_valid(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -87,6 +94,7 @@ class Tests(unittest.TestCase):
                 "preservation_status": "not_applicable",
             })
             data["mode"] = "implementation"
+            authorize_repository_edit(data)
             write_json(rv / "revision.json", data)
             self.assertTrue(any("exactly once" in error for error in validate(td, rv)))
 
@@ -106,6 +114,7 @@ class Tests(unittest.TestCase):
             })
             row["acceptance_results"][0].update({"status": "passed", "evidence": ["source-diff"]})
             data["mode"] = "implementation"
+            authorize_repository_edit(data)
             write_json(rv / "revision.json", data)
             self.assertTrue(any("rendered_experience-or-higher" in error for error in validate(td, rv)))
 
@@ -125,10 +134,51 @@ class Tests(unittest.TestCase):
             })
             row["acceptance_results"][0].update({"status": "passed", "evidence": ["rendered-check"]})
             data["mode"] = "implementation"
+            authorize_repository_edit(data)
             write_json(rv / "revision.json", data)
             errors = validate(td, rv)
             self.assertFalse(any("fixed experiential" in error for error in errors))
             self.assertFalse(any("unknown verification evidence" in error for error in errors))
+            self.assertFalse(any("requires authorized repository/design/CMS" in error for error in errors))
+
+    def test_implementation_work_requires_edit_authority(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            make_source_gap(td, rv)
+            data = read_json(rv / "revision.json")
+            row = data["findings"][0]
+            row.update({
+                "revalidation": "confirmed",
+                "current_evidence": ["rendered-current"],
+                "implementation_status": "fixed",
+                "approval": "approved",
+                "preservation_status": "not_applicable",
+                "changed_targets": ["src/flow.tsx"],
+                "verification_evidence": [{"ref": "rendered-check", "level": "rendered_experience"}],
+            })
+            row["acceptance_results"][0].update({"status": "passed", "evidence": ["rendered-check"]})
+            data["mode"] = "implementation"
+            write_json(rv / "revision.json", data)
+            errors = validate(td, rv)
+            self.assertTrue(any("requires authorized repository/design/CMS" in error for error in errors))
+
+    def test_malformed_enum_values_return_errors_not_traceback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            data = read_json(rv / "revision.json")
+            data["mode"] = []
+            data["findings"][0]["revalidation"] = []
+            data["findings"][0]["approval"] = {"bad": "value"}
+            data["findings"][0]["implementation_status"] = []
+            data["findings"][0]["preservation_status"] = {"bad": "value"}
+            data["findings"][0]["verification_evidence"] = [{"ref": "x", "level": []}]
+            data["readiness"]["highest_evidence_level"] = []
+            write_json(rv / "revision.json", data)
+            errors = validate(td, rv)
+            self.assertTrue(errors)
+            self.assertTrue(any("revision mode invalid" in error for error in errors))
+            self.assertTrue(any("revalidation invalid" in error for error in errors))
+            self.assertTrue(any("level invalid" in error for error in errors))
 
     def test_planning_only_forbids_implementation_claims(self):
         with tempfile.TemporaryDirectory() as temp:
