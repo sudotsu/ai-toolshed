@@ -10,7 +10,7 @@ The test is not merely "does revision.json validate?" It must show that revision
 - fixes visual/experience problems without flattening authentic strengths;
 - uses competitor evidence as calibration rather than cloning;
 - verifies rendered experience after code changes;
-- reuses or reruns behavioral/user evidence when the source finding depends on it rather than declaring success from source/rendered inspection alone;
+- when a source finding depends on behavioral or user evidence, preserves pre-change analytics/user-study evidence as the baseline and obtains new post-change behavioral or user evidence for the affected finding or criterion before claiming improvement; prior evidence cannot serve as proof that the revision caused the intended change;
 - does not over-apply guided engagement to low-friction tasks;
 - does not optimize a business metric by introducing deceptive/coercive friction;
 - checks interaction/motion/perceived-performance consequences when affected;
@@ -38,7 +38,7 @@ Track at minimum:
 - **strength-preservation rate** — important existing qualities remain intact unless an explicit approved tradeoff exists;
 - **harmful-intervention rate** — changes that make the user experience worse, add unjustified effort, or optimize the business at the user's expense;
 - **verification sufficiency** — evidence strength matches the claim being closed;
-- **behavioral-outcome agreement** — when analytics/user-study evidence exists, whether the revised outcome actually moves the relevant behavior/understanding in the intended direction;
+- **behavioral-outcome agreement** — when analytics/user-study evidence exists, whether new post-change evidence shows the revised outcome actually moved the relevant behavior/understanding in the intended direction relative to the pre-change baseline;
 - **competitive distinctiveness** — whether useful benchmark principles are adopted without cloning or genericizing the product;
 - **context sensitivity** — whether revision avoids applying the same interaction recipe to materially different tasks;
 - **convergence quality** — whether independent review of the revised product still finds unresolved material defects.
