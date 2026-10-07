@@ -201,6 +201,24 @@ class Tests(unittest.TestCase):
         self.assertTrue(any("id invalid" in error for error in errors))
         self.assertTrue(any("mode invalid" in error for error in errors))
 
+    def test_unhashable_state_journey_id_returns_error_not_traceback(self):
+        temp, root = self.pair()
+        self.addCleanup(temp.cleanup)
+        coverage = read_json(root / "coverage.json")
+        coverage["state_coverage"][0]["journey_id"] = []
+        write_json(root / "coverage.json", coverage)
+        errors = validate(root)
+        self.assertTrue(any("STATE-001.journey_id invalid" in error for error in errors))
+
+    def test_mixed_acceptance_criteria_is_rejected(self):
+        temp, root = self.pair()
+        self.addCleanup(temp.cleanup)
+        data = read_json(root / "findings.json")
+        data["findings"][0]["acceptance_criteria"] = ["valid", ["nested"]]
+        write_json(root / "findings.json", data)
+        errors = validate(root)
+        self.assertTrue(any("UXUI-001.acceptance_criteria must be non-empty string list" in error for error in errors))
+
     def test_screen_reader_not_required_for_complete(self):
         temp, root = self.pair()
         self.addCleanup(temp.cleanup)
