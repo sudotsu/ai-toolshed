@@ -156,9 +156,13 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         for action in EDIT_AUTHORITIES
     )
 
+    raw_source_findings = src.get("findings")
+    source_rows = raw_source_findings if isinstance(raw_source_findings, list) else []
+    if not isinstance(raw_source_findings, list):
+        errors.append("upstream findings must be list")
     source_findings = {
         row["id"]: row
-        for row in src.get("findings", [])
+        for row in source_rows
         if obj(row) and text(row.get("id"))
     }
     rows = rv.get("findings") if isinstance(rv.get("findings"), list) else []
@@ -200,15 +204,15 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         if isinstance(row.get("changed_targets"), list) and len(changed_targets) != len(row.get("changed_targets", [])):
             errors.append(f"{fid}.changed_targets must be string list")
         claims_edit_work = (
-            row.get("implementation_status") in {"in_progress", "fixed"}
+            enum_value(row.get("implementation_status"), {"in_progress", "fixed"})
             and row.get("revalidation") != "already_resolved"
         )
         if (changed_targets or claims_edit_work) and not edit_authorized:
             errors.append(f"{fid} implementation work requires authorized repository/design/CMS edit authority")
 
-        if row.get("revalidation") in {"confirmed", "changed", "already_resolved"} and not row.get("current_evidence"):
+        if enum_value(row.get("revalidation"), {"confirmed", "changed", "already_resolved"}) and not row.get("current_evidence"):
             errors.append(f"{fid} revalidation requires current evidence")
-        if row.get("revalidation") in {"stale", "not_applicable"} and row.get("implementation_status") == "fixed":
+        if enum_value(row.get("revalidation"), {"stale", "not_applicable"}) and row.get("implementation_status") == "fixed":
             errors.append(f"{fid} stale/not_applicable cannot be fixed")
 
         verification = validate_verification_evidence(fid, row.get("verification_evidence"), errors)
@@ -241,7 +245,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         if row.get("implementation_status") == "fixed":
             if row.get("approval") != "approved":
                 errors.append(f"{fid} fixed requires approved")
-            if row.get("revalidation") not in {"confirmed", "changed", "already_resolved"}:
+            if not enum_value(row.get("revalidation"), {"confirmed", "changed", "already_resolved"}):
                 errors.append(f"{fid} fixed requires terminal current-state revalidation")
             if any(
                 not obj(item) or not enum_value(item.get("status"), {"passed", "not_applicable"})
@@ -272,7 +276,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         if rv.get("mode") == "planning-only":
             if row.get("changed_targets"):
                 errors.append(f"{fid} planning-only cannot record changed targets")
-            if row.get("implementation_status") in {"in_progress", "fixed"}:
+            if enum_value(row.get("implementation_status"), {"in_progress", "fixed"}):
                 errors.append(f"{fid} planning-only cannot claim implementation work")
 
         if source.get("kind") == "strength":
@@ -307,7 +311,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         if not finding_ids or not all(isinstance(item, str) and item in source_findings for item in finding_ids):
             errors.append(f"{did}.finding_ids invalid")
         for linked_fid in finding_ids:
-            if linked_fid in decision_links:
+            if isinstance(linked_fid, str) and linked_fid in decision_links:
                 decision_links[linked_fid].append(decision)
         if (
             not text(decision.get("question"))
@@ -360,7 +364,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
                 errors.append(f"{cid}.severity invalid")
             if not enum_value(item.get("status"), {"open", "fixed", "accepted_risk", "not_applicable"}):
                 errors.append(f"{cid}.status invalid")
-            if item.get("status") == "open" and item.get("severity") in {"critical", "high", "medium"}:
+            if item.get("status") == "open" and enum_value(item.get("severity"), {"critical", "high", "medium"}):
                 open_material.append(cid)
 
     readiness = rv.get("readiness") if obj(rv.get("readiness")) else {}
@@ -397,21 +401,21 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
                 source = source_findings.get(fid)
                 if not source:
                     continue
-                if row.get("revalidation") in {"blocked", "stale"}:
+                if enum_value(row.get("revalidation"), {"blocked", "stale"}):
                     errors.append(f"overall ready has unrevalidated finding {fid}")
-                if row.get("implementation_status") in {"not_started", "planned", "in_progress", "blocked"}:
+                if enum_value(row.get("implementation_status"), {"not_started", "planned", "in_progress", "blocked"}):
                     errors.append(f"overall ready has incomplete finding {fid}")
-                if row.get("preservation_status") not in {"preserved", "approved_tradeoff", "not_applicable"}:
+                if not enum_value(row.get("preservation_status"), {"preserved", "approved_tradeoff", "not_applicable"}):
                     errors.append(f"overall ready has unresolved preservation status for {fid}")
                 if (
-                    source.get("status") in {"open", "decision_required"}
-                    and source.get("severity") in {"critical", "high", "medium"}
-                    and row.get("approval") not in {"approved", "deferred", "rejected", "accepted_risk"}
+                    enum_value(source.get("status"), {"open", "decision_required"})
+                    and enum_value(source.get("severity"), {"critical", "high", "medium"})
+                    and not enum_value(row.get("approval"), {"approved", "deferred", "rejected", "accepted_risk"})
                 ):
                     errors.append(f"overall ready has no terminal disposition for material finding {fid}")
                 if (
                     source.get("status") == "decision_required"
-                    and row.get("implementation_status") not in {"deferred", "rejected", "accepted_risk", "not_applicable"}
+                    and not enum_value(row.get("implementation_status"), {"deferred", "rejected", "accepted_risk", "not_applicable"})
                     and not any(decision.get("status") == "resolved" for decision in decision_links.get(fid, []))
                 ):
                     errors.append(f"overall ready has unresolved owner decision for {fid}")
