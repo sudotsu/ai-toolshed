@@ -188,6 +188,7 @@ class Tests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         data = read_json(root / "findings.json")
         coverage = read_json(root / "coverage.json")
+        data["evidence_sources"][0]["evidence_class"] = ["rendered_observation"]
         data["experience_assessments"][0]["axis"] = ["visual_craft"]
         coverage["access"][0]["category"] = {"bad": "value"}
         coverage["passes"][0]["id"] = ["ui_craft"]
@@ -196,6 +197,7 @@ class Tests(unittest.TestCase):
         write_json(root / "coverage.json", coverage)
         errors = validate(root)
         self.assertTrue(errors)
+        self.assertTrue(any("evidence_class invalid" in error for error in errors))
         self.assertTrue(any("axis invalid" in error for error in errors))
         self.assertTrue(any("category invalid" in error for error in errors))
         self.assertTrue(any("id invalid" in error for error in errors))
