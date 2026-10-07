@@ -194,7 +194,10 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         verification = validate_verification_evidence(fid, row.get("verification_evidence"), errors)
         results = row.get("acceptance_results") if isinstance(row.get("acceptance_results"), list) else []
         criteria = [item.get("criterion") for item in results if obj(item) and text(item.get("criterion"))]
-        source_criteria = source.get("acceptance_criteria") if isinstance(source.get("acceptance_criteria"), list) else []
+        raw_source_criteria = source.get("acceptance_criteria")
+        source_criteria = string_list(raw_source_criteria)
+        if not isinstance(raw_source_criteria, list) or len(source_criteria) != len(raw_source_criteria):
+            errors.append(f"{fid} source acceptance_criteria must be string list")
         if Counter(criteria) != Counter(source_criteria) or len(criteria) != len(results):
             errors.append(f"{fid} acceptance_results must cover every source criterion exactly once")
 
