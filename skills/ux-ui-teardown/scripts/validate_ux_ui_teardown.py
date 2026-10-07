@@ -271,7 +271,9 @@ def validate(root: Path):
             if not text(row.get(key)):
                 errors.append(f"{fid}.{key} must be non-empty text")
         for key in ["surface_targets", "acceptance_criteria", "verification_methods"]:
-            if not slist(row.get(key)):
+            value = row.get(key)
+            values = slist(value)
+            if not isinstance(value, list) or not values or len(values) != len(value):
                 errors.append(f"{fid}.{key} must be non-empty string list")
         refs(row.get("journey_ids"), set(journeys), f"{fid}.journey_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"{fid}.evidence_ids", errors, nonempty=True)
@@ -390,7 +392,7 @@ def validate(root: Path):
         if row.get("state") not in STATE_CLASSES:
             errors.append(f"{sid}.state invalid")
         jid = row.get("journey_id")
-        if jid not in journeys:
+        if not isinstance(jid, str) or jid not in journeys:
             errors.append(f"{sid}.journey_id invalid")
         if row.get("status") not in COVERAGE_STATUS:
             errors.append(f"{sid}.status invalid")
