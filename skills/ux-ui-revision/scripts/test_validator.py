@@ -239,6 +239,15 @@ class Tests(unittest.TestCase):
             errors = validate(td, rv)
             self.assertTrue(any("unknown finding UXUI-999" in error for error in errors))
 
+    def test_malformed_source_acceptance_criteria_returns_error_not_traceback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            findings = read_json(td / "findings.json")
+            findings["findings"][0]["acceptance_criteria"] = ["valid criterion", ["nested"]]
+            write_json(td / "findings.json", findings)
+            errors = validate(td, rv, run_upstream=False)
+            self.assertTrue(any("source acceptance_criteria must be string list" in error for error in errors))
+
     def test_deploy_requires_authority(self):
         with tempfile.TemporaryDirectory() as temp:
             td, rv = pair(Path(temp))
