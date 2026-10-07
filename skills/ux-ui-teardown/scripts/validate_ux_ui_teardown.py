@@ -156,7 +156,8 @@ def validate(root: Path):
 
     evidence = ids(findings_doc.get("evidence_sources"), PATTERNS["evidence"], "evidence_sources", errors)
     for eid, row in evidence.items():
-        if row.get("evidence_class") not in EVIDENCE_CLASSES:
+        evidence_class = row.get("evidence_class")
+        if not isinstance(evidence_class, str) or evidence_class not in EVIDENCE_CLASSES:
             errors.append(f"{eid}.evidence_class invalid")
         for key in ["title", "locator", "accessed_at", "summary"]:
             if not text(row.get(key)):
@@ -236,9 +237,9 @@ def validate(root: Path):
         cids = refs(row.get("competitor_ids"), set(competitors), f"{xid}.competitor_ids", errors)
         if cids:
             comparative_assessments.append((set(cids), set(evidence_refs), xid))
-        for jid in jids:
+        for linked_jid in jids:
             if axis is not None:
-                experiences_by_journey.setdefault(jid, set()).add(axis)
+                experiences_by_journey.setdefault(linked_jid, set()).add(axis)
 
     findings = ids(findings_doc.get("findings"), PATTERNS["finding"], "findings", errors)
     for fid, row in findings.items():
@@ -356,8 +357,8 @@ def validate(root: Path):
         jids = refs(row.get("journey_ids"), set(journeys), f"{vid}.journey_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"{vid}.evidence_ids", errors, nonempty=row.get("status") == "observed")
         if row.get("status") == "observed":
-            for jid in jids:
-                observed_views.setdefault(jid, set()).add(row.get("class"))
+            for linked_jid in jids:
+                observed_views.setdefault(linked_jid, set()).add(row.get("class"))
 
     input_rows = coverage.get("input_modes") if isinstance(coverage.get("input_modes"), list) else []
     if not isinstance(coverage.get("input_modes"), list):
@@ -384,8 +385,8 @@ def validate(root: Path):
         jids = refs(row.get("journey_ids"), set(journeys), f"input_modes[{index}].journey_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"input_modes[{index}].evidence_ids", errors, nonempty=row.get("status") == "observed")
         if row.get("status") == "observed":
-            for jid in jids:
-                observed_modes.setdefault(jid, set()).add(mode)
+            for linked_jid in jids:
+                observed_modes.setdefault(linked_jid, set()).add(mode)
 
     states = ids(coverage.get("state_coverage"), PATTERNS["state"], "state_coverage", errors)
     for sid, row in states.items():
