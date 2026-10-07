@@ -23,6 +23,7 @@ AUTH = {
     "third_party_outreach",
     "merge",
 }
+EDIT_AUTHORITIES = {"repository_edit", "design_file_edit", "cms_edit"}
 REVAL = {"confirmed", "changed", "stale", "already_resolved", "not_applicable", "blocked"}
 APP = {"pending", "approved", "deferred", "rejected", "accepted_risk", "not_applicable"}
 IMPL = {"not_started", "planned", "in_progress", "fixed", "preserved", "blocked", "deferred", "rejected", "accepted_risk", "not_applicable"}
@@ -47,6 +48,10 @@ def obj(value):
 
 def text(value):
     return isinstance(value, str) and bool(value.strip())
+
+
+def enum_value(value, allowed):
+    return isinstance(value, str) and value in allowed
 
 
 def string_list(value):
@@ -81,7 +86,7 @@ def validate_verification_evidence(fid: str, value, errors: list[str]):
             continue
         if ref in records:
             errors.append(f"{fid}.verification_evidence duplicate ref {ref}")
-        if level not in LEVEL_RANK:
+        if not enum_value(level, LEVEL_RANK):
             errors.append(f"{fid}.verification_evidence[{index}].level invalid")
         if "locator" in record and not text(record.get("locator")):
             errors.append(f"{fid}.verification_evidence[{index}].locator must be non-empty text when present")
@@ -105,7 +110,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         errors.append("upstream findings schema mismatch")
     if rv.get("schema_version") != "ux-ui-revision-v2":
         errors.append("revision schema_version must be ux-ui-revision-v2")
-    if rv.get("mode") not in {"planning-only", "implementation", "continuation"}:
+    if not enum_value(rv.get("mode"), {"planning-only", "implementation", "continuation"}):
         errors.append("revision mode invalid")
 
     source_meta = rv.get("source") if obj(rv.get("source")) else {}
@@ -135,7 +140,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         authority_map[action] = row
         if action not in AUTH:
             errors.append(f"authority[{index}].action invalid")
-        if row.get("status") not in {"authorized", "not_authorized", "not_applicable"}:
+        if not enum_value(row.get("status"), {"authorized", "not_authorized", "not_applicable"}):
             errors.append(f"authority[{index}].status invalid")
         if not isinstance(row.get("scope"), list) or not isinstance(row.get("evidence"), list):
             errors.append(f"authority[{index}] scope/evidence must be lists")
@@ -145,6 +150,11 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         obj(row) and row.get("status") == "authorized" for row in authority
     ):
         errors.append("planning-only cannot authorize mutation actions")
+
+    edit_authorized = any(
+        authority_map.get(action, {}).get("status") == "authorized"
+        for action in EDIT_AUTHORITIES
+    )
 
     source_findings = {
         row["id"]: row
@@ -174,18 +184,28 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
 
         if row.get("original_status") != source.get("status"):
             errors.append(f"{fid} original_status mismatch")
-        if row.get("revalidation") not in REVAL:
+        if not enum_value(row.get("revalidation"), REVAL):
             errors.append(f"{fid}.revalidation invalid")
-        if row.get("approval") not in APP:
+        if not enum_value(row.get("approval"), APP):
             errors.append(f"{fid}.approval invalid")
-        if row.get("implementation_status") not in IMPL:
+        if not enum_value(row.get("implementation_status"), IMPL):
             errors.append(f"{fid}.implementation_status invalid")
-        if row.get("preservation_status") not in PRES:
+        if not enum_value(row.get("preservation_status"), PRES):
             errors.append(f"{fid}.preservation_status invalid")
 
         for key in ["current_evidence", "changed_targets", "acceptance_results"]:
             if not isinstance(row.get(key), list):
                 errors.append(f"{fid}.{key} must be list")
+        changed_targets = string_list(row.get("changed_targets"))
+        if isinstance(row.get("changed_targets"), list) and len(changed_targets) != len(row.get("changed_targets", [])):
+            errors.append(f"{fid}.changed_targets must be string list")
+        claims_edit_work = (
+            row.get("implementation_status") in {"in_progress", "fixed"}
+            and row.get("revalidation") != "already_resolved"
+        )
+        if (changed_targets or claims_edit_work) and not edit_authorized:
+            errors.append(f"{fid} implementation work requires authorized repository/design/CMS edit authority")
+
         if row.get("revalidation") in {"confirmed", "changed", "already_resolved"} and not row.get("current_evidence"):
             errors.append(f"{fid} revalidation requires current evidence")
         if row.get("revalidation") in {"stale", "not_applicable"} and row.get("implementation_status") == "fixed":
@@ -202,7 +222,11 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
             errors.append(f"{fid} acceptance_results must cover every source criterion exactly once")
 
         for result_index, result in enumerate(results):
-            if not obj(result) or result.get("status") not in ACC or not isinstance(result.get("evidence"), list):
+            if (
+                not obj(result)
+                or not enum_value(result.get("status"), ACC)
+                or not isinstance(result.get("evidence"), list)
+            ):
                 errors.append(f"{fid}.acceptance_results[{result_index}] invalid")
                 continue
             evidence_refs = string_list(result.get("evidence"))
@@ -219,7 +243,10 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
                 errors.append(f"{fid} fixed requires approved")
             if row.get("revalidation") not in {"confirmed", "changed", "already_resolved"}:
                 errors.append(f"{fid} fixed requires terminal current-state revalidation")
-            if any(not obj(item) or item.get("status") not in {"passed", "not_applicable"} for item in results):
+            if any(
+                not obj(item) or not enum_value(item.get("status"), {"passed", "not_applicable"})
+                for item in results
+            ):
                 errors.append(f"{fid} fixed has unmet acceptance criterion")
             if not verification:
                 errors.append(f"{fid} fixed requires verification evidence")
@@ -234,7 +261,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
             linked_levels = [
                 LEVEL_RANK.get(verification[ref].get("level"), -1)
                 for ref in linked_refs
-                if ref in verification
+                if ref in verification and isinstance(verification[ref].get("level"), str)
             ]
             if experiential and not any(level >= LEVEL_RANK["rendered_experience"] for level in linked_levels):
                 errors.append(f"{fid} fixed experiential finding requires rendered_experience-or-higher acceptance evidence")
@@ -279,14 +306,19 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
         finding_ids = decision.get("finding_ids") if isinstance(decision.get("finding_ids"), list) else []
         if not finding_ids or not all(isinstance(item, str) and item in source_findings for item in finding_ids):
             errors.append(f"{did}.finding_ids invalid")
-        for fid in finding_ids:
-            if fid in decision_links:
-                decision_links[fid].append(decision)
-        if not text(decision.get("question")) or not isinstance(decision.get("options"), list) or not decision.get("options") or not all(text(item) for item in decision.get("options", [])):
+        for linked_fid in finding_ids:
+            if linked_fid in decision_links:
+                decision_links[linked_fid].append(decision)
+        if (
+            not text(decision.get("question"))
+            or not isinstance(decision.get("options"), list)
+            or not decision.get("options")
+            or not all(text(item) for item in decision.get("options", []))
+        ):
             errors.append(f"{did} question/options invalid")
         if not text(decision.get("recommendation")):
             errors.append(f"{did}.recommendation required")
-        if decision.get("status") not in {"pending", "resolved", "deferred"}:
+        if not enum_value(decision.get("status"), {"pending", "resolved", "deferred"}):
             errors.append(f"{did}.status invalid")
         if not isinstance(decision.get("owner_evidence"), list):
             errors.append(f"{did}.owner_evidence must be list")
@@ -309,7 +341,7 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
     if not convergence:
         errors.append("convergence must be object")
     else:
-        if convergence.get("status") not in {"not_started", "in_progress", "converged", "blocked"}:
+        if not enum_value(convergence.get("status"), {"not_started", "in_progress", "converged", "blocked"}):
             errors.append("convergence.status invalid")
         seen = set()
         items = convergence.get("findings") if isinstance(convergence.get("findings"), list) else []
@@ -324,9 +356,9 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
             if cid in seen:
                 errors.append(f"duplicate convergence {cid}")
             seen.add(cid)
-            if item.get("severity") not in {"critical", "high", "medium", "low", "informational"}:
+            if not enum_value(item.get("severity"), {"critical", "high", "medium", "low", "informational"}):
                 errors.append(f"{cid}.severity invalid")
-            if item.get("status") not in {"open", "fixed", "accepted_risk", "not_applicable"}:
+            if not enum_value(item.get("status"), {"open", "fixed", "accepted_risk", "not_applicable"}):
                 errors.append(f"{cid}.status invalid")
             if item.get("status") == "open" and item.get("severity") in {"critical", "high", "medium"}:
                 open_material.append(cid)
@@ -335,9 +367,17 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
     if not readiness:
         errors.append("readiness must be object")
     else:
-        if readiness.get("highest_evidence_level") not in LEVEL_RANK:
+        if not enum_value(readiness.get("highest_evidence_level"), LEVEL_RANK):
             errors.append("readiness.highest_evidence_level invalid")
-        if readiness.get("overall") not in {"planned", "not_ready", "ready", "blocked"}:
+        if not enum_value(readiness.get("implementation"), {"not_started", "in_progress", "ready", "blocked"}):
+            errors.append("readiness.implementation invalid")
+        if not enum_value(readiness.get("integration"), {"not_started", "in_progress", "ready", "blocked"}):
+            errors.append("readiness.integration invalid")
+        if not enum_value(readiness.get("deployment"), {"not_performed", "performed", "blocked", "not_applicable"}):
+            errors.append("readiness.deployment invalid")
+        if not enum_value(readiness.get("publication"), {"not_performed", "performed", "blocked", "not_applicable"}):
+            errors.append("readiness.publication invalid")
+        if not enum_value(readiness.get("overall"), {"planned", "not_ready", "ready", "blocked"}):
             errors.append("readiness.overall invalid")
         if readiness.get("deployment") == "performed" and authority_map.get("production_deploy", {}).get("status") != "authorized":
             errors.append("deployment performed without production_deploy authority")
@@ -363,10 +403,16 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
                     errors.append(f"overall ready has incomplete finding {fid}")
                 if row.get("preservation_status") not in {"preserved", "approved_tradeoff", "not_applicable"}:
                     errors.append(f"overall ready has unresolved preservation status for {fid}")
-                if source.get("status") in {"open", "decision_required"} and source.get("severity") in {"critical", "high", "medium"} and row.get("approval") not in {"approved", "deferred", "rejected", "accepted_risk"}:
+                if (
+                    source.get("status") in {"open", "decision_required"}
+                    and source.get("severity") in {"critical", "high", "medium"}
+                    and row.get("approval") not in {"approved", "deferred", "rejected", "accepted_risk"}
+                ):
                     errors.append(f"overall ready has no terminal disposition for material finding {fid}")
-                if source.get("status") == "decision_required" and row.get("implementation_status") not in {"deferred", "rejected", "accepted_risk", "not_applicable"} and not any(
-                    decision.get("status") == "resolved" for decision in decision_links.get(fid, [])
+                if (
+                    source.get("status") == "decision_required"
+                    and row.get("implementation_status") not in {"deferred", "rejected", "accepted_risk", "not_applicable"}
+                    and not any(decision.get("status") == "resolved" for decision in decision_links.get(fid, []))
                 ):
                     errors.append(f"overall ready has unresolved owner decision for {fid}")
     return errors
