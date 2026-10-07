@@ -105,6 +105,7 @@ Rules:
 - `source_inspection` can support implementation correctness but does not by itself prove a visual or interaction outcome is fixed;
 - retained strengths stay `preserved`, unless `preservation_status: approved_tradeoff` with explicit `approval: approved`;
 - planning-only authorizes no mutation action, records no changed targets, and cannot claim `in_progress|fixed` implementation;
+- implementation/continuation rows that record `changed_targets` or claim `in_progress|fixed` work require an authorized edit action appropriate to the work (`repository_edit`, `design_file_edit`, or `cms_edit`); an `already_resolved` revalidation does not imply this revision run performed an edit;
 - planning-only cannot claim deployment or publication was performed;
 - overall ready requires terminal preservation and terminal disposition for material open/decision-required findings;
 - overall ready cannot contain findings whose current-state revalidation remains `blocked|stale`.
