@@ -17,13 +17,18 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Skill | [seo-revision](skills/seo-revision/) | Revalidate and implement approved SEO findings, respect repository and external-action boundaries, verify search eligibility, and produce a durable revision and experiment record. |
 | Skill | [brand-teardown](skills/brand-teardown/) | Audit positioning, differentiation, architecture, messaging, trust, identity, claims, channel expression, and competitive context without changing the audited project. |
 | Skill | [brand-revision](skills/brand-revision/) | Revalidate approved brand findings, resolve owner decisions and authority, implement changes while preserving authentic strengths, and verify expression separately from audience perception and business outcomes. |
+| Skill | [ux-ui-teardown](skills/ux-ui-teardown/) | Audit visual craft, real user journeys, contextual engagement, audience fit, and measured competitor calibration without changing the product. |
+| Skill | [ux-ui-revision](skills/ux-ui-revision/) | Revalidate and implement approved UX/UI findings, preserve authentic strengths, resolve context-sensitive decisions, and verify the rendered experience without copying competitors. |
 
-The skills include three implemented teardown/revision workflows:
+The UX/UI pair is under flagship evaluation. Its package tests pass, but [peer outcome comparison and runtime evidence](docs/ux-ui-top-five-benchmark.md) remain incomplete. Treat market-parity claims as unverified until those gates are met.
+
+The skills include four implemented teardown/revision workflows:
 
 ```text
 project-teardown  -> project-revision
 seo-teardown      -> seo-revision
 brand-teardown    -> brand-revision
+ux-ui-teardown    -> ux-ui-revision
 ```
 
 The teardown skills are comprehensive and read-only. The revision skills consume validated handoffs, request decisions where needed, implement only approved work, preserve strengths and limitations, and verify the resulting state without claiming unproven outcomes.
@@ -44,7 +49,9 @@ ai-toolshed/
 │   ├── seo-teardown/
 │   ├── seo-revision/
 │   ├── brand-teardown/
-│   └── brand-revision/
+│   ├── brand-revision/
+│   ├── ux-ui-teardown/
+│   └── ux-ui-revision/
 └── tools/
 ```
 
@@ -55,6 +62,8 @@ The documentation guides preserve reusable architecture, configuration, and vali
 ## Install the skills
 
 The canonical skill packages target both Claude Code and Codex. Their local desktop coding surfaces use the same runtime-specific skill sources:
+
+The paths and invocations below are package targets, not proof that the new UX/UI pair has been discovered and exercised on every surface. That pair has a source-only Codex CLI smoke run; installed discovery and real operations on Claude Code, Claude Desktop Code, Codex IDE, and ChatGPT desktop remain unverified.
 
 | Runtime surface | Personal installation root | Explicit invocation |
 | --- | --- | --- |
@@ -71,7 +80,7 @@ From WSL or another POSIX shell:
 ```bash
 for target_root in "$HOME/.claude/skills" "$HOME/.agents/skills"; do
   mkdir -p "$target_root"
-  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown brand-revision; do
+  for skill in project-teardown project-revision seo-teardown seo-revision brand-teardown brand-revision ux-ui-teardown ux-ui-revision; do
     destination="$target_root/$skill"
     rm -rf -- "$destination"
     cp -R "skills/$skill" "$destination"
@@ -88,7 +97,7 @@ $skillRoots = @(
 )
 foreach ($skillRoot in $skillRoots) {
   New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown", "brand-revision") {
+  foreach ($skill in "project-teardown", "project-revision", "seo-teardown", "seo-revision", "brand-teardown", "brand-revision", "ux-ui-teardown", "ux-ui-revision") {
     $destination = Join-Path $skillRoot $skill
     if (Test-Path -LiteralPath $destination) {
       Remove-Item -LiteralPath $destination -Recurse -Force
@@ -98,7 +107,7 @@ foreach ($skillRoot in $skillRoots) {
 }
 ```
 
-Both runtimes detect skill changes automatically in ordinary local sessions; restart if a new top-level skill directory does not appear. Invoke the installed workflows with the runtime's syntax:
+After installation, restart a runtime if a new top-level skill directory does not appear. The intended invocation syntax is:
 
 ```text
 Claude Code / Claude Desktop Code:
@@ -108,6 +117,8 @@ Claude Code / Claude Desktop Code:
 /seo-revision implement the approved SEO teardown findings.
 /brand-teardown audit this project's brand system without changing it.
 /brand-revision implement the approved brand teardown findings.
+/ux-ui-teardown audit this product's UX/UI without changing it.
+/ux-ui-revision implement the approved UX/UI teardown findings.
 
 Codex CLI / IDE extension:
 Use $project-teardown to comprehensively evaluate this project.
@@ -116,6 +127,8 @@ Use $seo-teardown to investigate this site's organic-search opportunity.
 Use $seo-revision to implement the approved SEO teardown findings.
 Use $brand-teardown to audit this project's brand system without changing it.
 Use $brand-revision to implement the approved brand teardown findings.
+Use $ux-ui-teardown to audit this product's UX/UI without changing it.
+Use $ux-ui-revision to implement the approved UX/UI teardown findings.
 
 ChatGPT desktop app:
 @project-teardown comprehensively evaluate this project.
@@ -124,6 +137,8 @@ ChatGPT desktop app:
 @seo-revision implement the approved SEO teardown findings.
 @brand-teardown audit this project's brand system without changing it.
 @brand-revision implement the approved brand teardown findings.
+@ux-ui-teardown audit this product's UX/UI without changing it.
+@ux-ui-revision implement the approved UX/UI teardown findings.
 ```
 
 Local copies reach the local coding surfaces listed above. They do not automatically install into Claude Chat/Cowork, cloud sessions, or ChatGPT Chat/Work. Those surfaces use account sync or plugin distribution and must be packaged and tested separately. See [Runtime Portability](docs/runtime-portability.md) for the exact boundary and current official sources.

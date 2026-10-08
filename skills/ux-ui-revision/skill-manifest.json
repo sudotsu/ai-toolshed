@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "name": "ux-ui-revision",
+  "targets": [
+    "claude-code",
+    "codex",
+    "claude-desktop-code",
+    "chatgpt-desktop-codex"
+  ],
+  "required_files": [
+    "SKILL.md",
+    "references/revision-contract.md",
+    "references/authority-and-external-actions.md",
+    "references/verification-and-convergence.md",
+    "references/forward-testing.md",
+    "references/top-five-benchmark.md",
+    "scripts/bootstrap_revision.py",
+    "scripts/render_revision.py",
+    "scripts/validate_ux_ui_revision.py",
+    "scripts/validation_common.py",
+    "scripts/test_validator.py",
+    "scripts/validate_skill.py",
+    "agents/openai.yaml"
+  ],
+  "forbidden_files": [],
+  "frontmatter": {
+    "keys": "claude-standard",
+    "description_min_length": 80
+  },
+  "tests": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "cwd": "scripts",
+      "timeout_seconds": 300
+    }
+  ]
+}
