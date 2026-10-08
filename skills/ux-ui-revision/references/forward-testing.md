@@ -27,7 +27,7 @@ Do not claim market-leading revision quality from CI, self-review, or a small ha
 
 ## Required top-five reference benchmark
 
-Before treating the revision skill as flagship-finished, review and apply [`../../../docs/ux-ui-top-five-benchmark.md`](../../../docs/ux-ui-top-five-benchmark.md). The same five and applicable capability bar govern teardown and revision so the pair cannot satisfy the repository quality standard by benchmarking only the audit half.
+Before treating the revision skill as flagship-finished, review and apply [`top-five-benchmark.md`](top-five-benchmark.md). The same five and applicable capability bar govern teardown and revision so the pair cannot satisfy the repository quality standard by benchmarking only the audit half.
 
 If the benchmark becomes stale or the domain changes materially, refresh the five from current attributable multi-signal evidence before relying on it. Do not silently substitute model memory or a convenient comparison set.
 
