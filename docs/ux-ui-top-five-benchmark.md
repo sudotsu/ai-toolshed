@@ -1,161 +1,55 @@
-# UX/UI pair — top-five current-performer benchmark
+# UX/UI skills: peer cohort and flagship evidence plan
 
-Benchmark date: **2026-10-07**.
+Status: **benchmark incomplete**. Research snapshot: 2026-10-08. This document does not establish that either Toolshed skill is in the top five or performs at top-five quality.
 
-This document applies the repository quality bar to `ux-ui-teardown` and `ux-ui-revision`.
+## Compare the product that actually ships
 
-## Domain being benchmarked
+`ux-ui-teardown` and `ux-ui-revision` are portable agent skills. Their direct comparison set should therefore be agent skills used to inspect, design, or improve digital interfaces under the same model, project access, and task brief. UX research platforms such as Baymard, UserTesting, Maze, Dscout, and Contentsquare remain useful sources of research practice. They are not direct peer skills, and their proprietary panels, analytics collection, or research corpora cannot be treated as capabilities these files have matched.
 
-The relevant domain is **UX/UI evaluation and evidence-to-improvement tooling for digital product interfaces**: systems that help a team identify usability/interface problems, ground judgments in evidence, prioritize improvements, and verify whether the experience got better.
+## Provisional peer cohort
 
-This is intentionally narrower than "design software" and broader than "AI screenshot critic." The Toolshed pair audits rendered product experience, can consume behavioral/user evidence, calibrates against competitors, produces a structured implementation handoff, and verifies revisions. A benchmark that considered only screenshot graders would ignore much of the actual job; a benchmark against general design generators would compare a different job.
+These five public, current, inspectable agent-skill projects are a **test cohort**, not a verified ranking of the world's five best. They were selected for visible adoption or publisher credibility, active code, and complementary coverage of visual craft, UX review, and implementation. Popularity helps identify relevant peers; it does not establish quality. Reassess the cohort before a market-ranking claim.
 
-The five below are **not an arbitrary convenience set and are not ranked 1–5**. They were selected from current attributable evidence using multiple signals relevant to this domain: research rigor or observed-user evidence, independent/verified market evidence, adoption/usage scale, breadth of applicable UX evaluation capability, and category leadership. No single metric determined inclusion.
+| Peer, pinned source | Capability to test against | Selection limit |
+| --- | --- | --- |
+| [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/1a2c459b35f26116fd165b0a0f30597f252749ff) | Searchable design guidance, styles, palettes, type, UX rules, and implementation direction across stacks | Strong direct design-intelligence peer; its database size is not an outcome measure. |
+| [Impeccable](https://github.com/pbakaus/impeccable/tree/778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d) | Audit/critique, craft and polish workflows, browser iteration, deterministic frontend checks | Broadest visible audit-to-improvement peer; advertised rules require outcome testing. |
+| [Taste Skill](https://github.com/Leonxlnx/taste-skill/tree/b482f7a970abb98c4108d4a9f761e458c64cefc8) | Distinctive visual direction and redesign guidance | More creation focused than evidence-led audit. |
+| [Anthropic frontend-design](https://github.com/anthropics/skills/tree/683bc88e56f3e09ba94f7055977f3d3aa499f202/skills/frontend-design) | Original widely distributed frontend craft skill | Focuses on generation; publisher prominence does not prove superior UX outcomes. |
+| [Vercel web-design-guidelines](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/web-design-guidelines) | Structured web interface review against published guidelines | Narrower review scope; guideline coverage is not a complete revision workflow. |
 
-## The five current reference leaders
+The cohort deliberately spans review and creation because the Toolshed pair claims to do both diagnosis and improvement. Report each peer's supported role separately. Do not hide a peer's strength by scoring it only on an unsupported role, and do not credit Toolshed for breadth without judging the delivered result.
 
-### 1. Baymard Institute / UX-Ray
+## Known gaps to test directly
 
-Why it belongs in the set:
+UI/UX Pro Max supplies a searchable design corpus and design-system suggestions; Toolshed has no equivalent built-in reference library. Impeccable supplies a broad command vocabulary, live browser iteration, and deterministic frontend detectors; Toolshed has no equivalent detector suite. Taste Skill and Anthropic frontend-design are explicit about visual direction and new UI creation, whereas Toolshed's revision half starts from an existing teardown. Those differences may matter substantially for visual output and speed. The test must expose them rather than credit Toolshed's more detailed audit artifact as a substitute for a better interface.
 
-- Baymard documents 200,000+ hours of UX research, 4,400+ moderated participant/site sessions, 54 rounds of manual benchmarking, 344 top-grossing sites, 810 UX guidelines in its methodology dataset, 175,000+ implementation examples, and 275,000+ weighted UX performance scores.
-- UX-Ray is a direct automated UX-analysis peer: Baymard reports 95% accuracy versus its human UX experts and documents the comparison method across 79 websites.
-- It combines heuristic evaluation, evidence traceability, competitor scanning, prioritization, and research-backed recommendations.
+## What must be demonstrated
 
-Current evidence:
+The intended advantage is an evidence chain from observed issue through owner decision, change, rendered verification, and regression review. It must be judged on actual outputs, not on the presence of fields or instructions. Compare at least:
 
-- https://baymard.com/research/methodology
-- https://baymard.com/blog/ux-ray-progress-2026
-- https://baymard.com/research-articles/ai-heuristic-evaluations
-- https://baymard.com/product/ux-ray
+1. Finding accuracy, missed material issues, severity, and unsupported claims.
+2. Visual craft judgment: composition, typography, color, imagery, responsive behavior, and distinctiveness.
+3. Journey quality: task completion, feedback, recovery, effort and payoff, inclusive usability, and manipulative friction.
+4. Use of behavioral and user evidence when the conclusion needs it.
+5. Recommendation quality and risk of making the product worse.
+6. Implementation quality, preservation of strengths, rendered verification, and new regressions.
+7. Time, agent turns, tool use, artifact usability, installation friction, and runtime portability.
 
-### 2. UserTesting
+## Reproducible evaluation
 
-Why it belongs in the set:
+Before running a candidate, record the project revision, test brief, permitted tools, model and version, runtime and version, candidate commit, install path, settings, and any unavailable evidence. Preserve the raw prompt, transcript, produced artifacts, screenshots or recordings, validator results, and reviewer notes. Keep all candidates on the same input and access budget; allow each skill to use its own intended workflow. A no-skill baseline helps distinguish a skill's contribution from the model's native ability.
 
-- UserTesting is a Leader in G2's Fall 2026 Enterprise Grid for User Research.
-- G2's leader placement uses verified customer reviews plus market presence rather than vendor self-ranking.
-- It is a major reference for the part an automated audit cannot manufacture: direct human observation, qualitative evidence, task comprehension, trust, preference, and post-change validation.
+Use a diversified set of real products and tasks: a high-consideration service flow, a low-friction transaction, commerce checkout, SaaS onboarding/core task, information-heavy navigation, and a mobile-dominant or localized experience. Include at least one case with genuine first-party behavior or user evidence. Record failures and abandoned runs. Do not tune the skill on held-out cases and then score those cases as independent evidence.
 
-Current evidence:
+For each case, establish reference findings and desired outcomes **before** inspecting candidate results. Use qualified independent UX reviewers, real task observation, reliable existing research, or a combination. Blind reviewers to the candidate where practical. Score issue-level precision and recall, severity agreement, harmful recommendations, strength preservation, and whether implementation passes its acceptance criteria without regressions. Record disagreement and confidence. A second pass by the author or the same model is useful debugging, not independent ground truth.
 
-- https://www.usertesting.com/blog/g2-user-research-leaders-fall-2026
-- https://www.usertesting.com/resources/reports/g2-enterprise-report-fall-2026
-- https://www.g2.com/categories/user-research/themes/usability-testing
+Run the teardown and revision roles separately. For revision, provide the same validated starting findings and authorization to every candidate capable of implementation. Reinspect the resulting UI at the relevant viewports and states. A passed JSON validator is not proof that an intervention worked.
 
-### 3. Contentsquare / Hotjar
+## Current evidence and release decision
 
-Why it belongs in the set:
+The PR has package/unit tests and two described forward smoke tests on OmahaTreeCare and TipJar. The PR does not contain preserved, independently scored peer runs or a blinded reference corpus. Thus it has **workflow viability evidence**, not demonstrated peer parity. The five projects above have not yet been run against the same cases in this repository.
 
-- Contentsquare's current G2 seller profile reports 2,084 reviews, a 4.4/5 average, Grid Leader status, and #1 placement in three categories.
-- The product family covers customer-journey analytics, digital analytics, heatmaps, session replay, feedback, and user research—the behavior-evidence side of serious UX diagnosis.
-- This makes it a strong bar for finding friction from actual usage rather than inferring user behavior from source code or screenshots.
+A further isolated Codex CLI 0.161.0 / `gpt-6.1-sol` source-only TipJar smoke on revision `d2fb37e` produced a validated provisional handoff: seven findings, four explicitly untested journeys, and no rendered or competitor claims. It used 62,857 agent tokens. This is a useful evidence-discipline signal and an operational cost problem, not a quality benchmark. The bootstrap added after that run still needs its own runtime cost measurement; the raw agent transcript was not preserved, so this run cannot enter a reproducible peer scorecard.
 
-Current evidence:
-
-- https://www.g2.com/sellers/contentsquare
-- https://www.g2.com/products/hotjar-by-contentsquare/reviews
-
-### 4. Maze
-
-Why it belongs in the set:
-
-- Maze's current G2 profile reports a 4.5/5 rating from 111 reviews and describes an all-in-one research workflow spanning recruiting, testing, and analysis.
-- Maze reports 60,000 brands, 325,000 live studies, and 6.2 million user responses.
-- It is a strong reference for rapid prototype/live-product testing, task/path evidence, quantitative-plus-qualitative research, and design-decision validation.
-
-Current evidence:
-
-- https://www.g2.com/products/maze-maze/reviews
-- https://maze.co/customers/
-
-### 5. Dscout
-
-Why it belongs in the set:
-
-- Dscout's current G2 profile reports 4.5/5 across 191 reviews and broad multi-method user-research capability.
-- G2 identifies usability testing, interviews, field/diary studies, surveys, intercepts, card sorting, and participant recruitment among its capabilities.
-- Dscout reports access to more than 3 million additional participants through partner panels and publishes substantial enterprise customer evidence.
-- It is a strong bar for in-context qualitative evidence and for preventing a UX audit from substituting model inference for real human behavior.
-
-Current evidence:
-
-- https://www.g2.com/products/dscout/reviews
-- https://www.dscout.com/platform/find-participants
-- https://www.dscout.com/customers
-
-## What the Toolshed pair must match or beat
-
-For the parts of the job that apply to a portable agent skill, `ux-ui-teardown` + `ux-ui-revision` should not be considered flagship-finished unless they cover these capabilities at a top-tier level:
-
-1. **Evidence provenance and claim discipline.** A finding must say what evidence supports it, distinguish observation from inference, and refuse to turn source inspection into a rendered/behavioral claim.
-2. **Real journey and task reasoning.** Evaluate end-to-end user work, not isolated screenshots or generic heuristic counts.
-3. **UI craft judgment.** Evaluate composition, hierarchy, spacing, typography, color systems, imagery, responsive recomposition, interaction polish, perceived performance, coherence, and accidental/template-like design.
-4. **Context-sensitive UX judgment.** Do not mechanically optimize for fewer clicks, more engagement, more conversion, or a universal pattern. Judge effort by whether it produces feedback, progress, relevance, or payoff for this product and audience.
-5. **Behavioral and user evidence escalation.** Consume analytics, session/behavior evidence, and user research when available; require new post-change evidence when improvement claims depend on behavior or user response.
-6. **Measured competitive calibration.** Select competitors from current attributable evidence, observe equivalent surfaces, compare without cloning, and preserve areas where the audited product is already stronger.
-7. **Accessibility and inclusive usability.** Catch material readability, contrast, input, focus, semantics, reflow, target, motion, and assistive-technology issues in proportion to actual risk.
-8. **Actionability.** Findings need prioritized recommendations, acceptance criteria, verification methods, affected targets, dependencies, non-goals, and preservation constraints—not vague critique.
-9. **Strength preservation and tradeoffs.** Record what is already good and prevent revision from normalizing distinctive or effective qualities away.
-10. **Implementation coupling.** Carry validated findings into an implementation ledger without losing provenance, criteria, owner decisions, or authority boundaries.
-11. **Verification and convergence.** A visual/behavioral finding is not fixed because code changed. Verify the affected experience at the evidence level required by the original claim, then perform convergence review before readiness.
-12. **Safe mutation boundaries.** Separate planning, editing, publishing, deploying, outreach, purchases, and merging; do not infer authority from access.
-13. **Reproducibility and malformed-input safety.** Deterministic artifacts, explicit schemas, bounded validation failure, and regression coverage are part of the product, not optional engineering hygiene.
-
-## Where the market leaders remain stronger
-
-The Toolshed pair does **not** natively reproduce several capabilities of these platforms:
-
-- participant recruitment/panels;
-- hosted moderated or unmoderated research infrastructure;
-- session-replay and heatmap data collection;
-- product analytics/event collection;
-- enterprise research repositories and dashboards;
-- Baymard's proprietary 200,000+ hour research corpus and manually scored benchmark database.
-
-Those are not silently ignored. For this project's actual use case, reproducing those SaaS/data-collection infrastructures inside a portable agent skill is **not necessary** and would add enormous complexity without improving the skill's core job. The requirement instead is:
-
-- use those evidence sources when they are available through connected tools, files, analytics, or supplied research;
-- never fabricate the evidence they provide;
-- keep claims provisional when the needed evidence is unavailable;
-- recommend/escalate to real user or behavioral research when the question cannot be answered reliably from direct inspection.
-
-This is the explicit use-case exception permitted by `docs/quality-bar.md`.
-
-## Where the Toolshed pair should be stronger or meaningfully differentiated
-
-The pair is designed to exceed typical standalone audit/research products on several applicable workflow dimensions:
-
-- one evidence chain from teardown finding to approved implementation to post-change verification;
-- deterministic, validator-backed handoff artifacts rather than an unstructured report;
-- exact acceptance-criterion accounting before a finding can be closed;
-- explicit owner/context decisions and approved-tradeoff handling;
-- explicit preservation of strengths, not only defect discovery;
-- typed mutation authority and separation of edit/deploy/publish/merge permissions;
-- code/repository awareness when source is available while still refusing to infer rendered outcomes from source;
-- context-sensitive UX reasoning that can reach opposite conclusions for superficially similar patterns;
-- measured competitor selection plus actual competitor-surface observation;
-- regression/convergence gates that challenge whether the revision introduced new UX defects.
-
-These are design targets. They are not, by themselves, proof of market superiority.
-
-## Evidence required before claiming top-five parity or superiority
-
-Green CI, detailed contracts, and two successful forward tests are not enough to claim that this pair is empirically better than the five references above.
-
-A parity/superiority claim requires a diversified blind or independently checked benchmark that measures, at minimum:
-
-- material-finding precision and false-positive rate;
-- material-finding recall / missed-opportunity rate;
-- severity/prioritization agreement with qualified independent review or trusted reference findings;
-- correct use of behavioral/user evidence versus unsupported inference;
-- recommendation quality and harmful-intervention rate;
-- strength-preservation rate;
-- acceptance/verification correctness after revision;
-- regression rate after implementation;
-- context sensitivity across materially different product archetypes;
-- competitor-calibration quality and non-copying behavior.
-
-The current V2 forward tests on OmahaTreeCare and TipJar establish **workflow viability and context sensitivity**, not top-five empirical parity. Until the broader benchmark exists, the accurate claim is:
-
-> The UX/UI pair is intentionally designed and release-gated against five evidence-selected current leaders on the capabilities that apply to a portable agent workflow; market-leading judgment quality remains an empirical benchmark question, not something inferred from CI or architecture.
+Treat the pair as flagship only after: the reproducible comparison is complete; the two skill packages pass their correctness and runtime gates; independent review finds no unresolved material gap; and the observed results are at least competitive with the strongest applicable peers across the core dimensions above. If a peer wins a dimension, document the gap and either close it or state the narrower scope. Do not translate a green CI run, a good demo, or this cohort list into a top-five claim.

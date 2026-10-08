@@ -15,6 +15,7 @@
     "references/report-contract.md",
     "references/forward-testing.md",
     "references/top-five-benchmark.md",
+    "scripts/bootstrap_teardown.py",
     "scripts/render_handoff.py",
     "scripts/test_malformed_input.py",
     "scripts/test_validator.py",

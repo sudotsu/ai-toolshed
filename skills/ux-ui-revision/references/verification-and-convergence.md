@@ -1,8 +1,8 @@
 # Verification and convergence
 
-## Evidence ladder
+## Evidence types
 
-Do not let a lower level prove a higher claim:
+Evidence types answer different questions. They are not a single ladder where any later type proves every earlier type:
 
 1. `source_inspection`
 2. `rendered_experience`
@@ -12,7 +12,7 @@ Do not let a lower level prove a higher claim:
 6. `first_party_measurement`
 7. `business_outcome`
 
-A CSS diff can prove code changed. It cannot prove the interface looks better.
+A CSS diff can prove code changed. Business outcome data can show an outcome changed. Neither alone proves the interface looks better. Visual and interaction fixes require linked `rendered_experience` or `published_experience` evidence even when stronger behavioral evidence is also available.
 
 ## Verification by change type
 

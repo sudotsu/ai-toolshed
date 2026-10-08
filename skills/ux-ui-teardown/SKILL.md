@@ -253,6 +253,15 @@ ux-ui-teardown/
 └── evidence/
 ```
 
+Start a new handoff with the bundled scaffold, using the actual project values. The scaffold is deliberately `provisional` and contains an open limitation; replace its placeholders with observed evidence and coverage. Use [report-contract.md](references/report-contract.md) to author the JSON. Run the validator after writing; inspect validator source only when the contract or an error does not explain a field.
+
+```bash
+python3 <skill-directory>/scripts/bootstrap_teardown.py <ux-ui-teardown-directory> \
+  --project-name '<name>' --project-locator '<source>' --audited-revision '<revision>' \
+  --project-type <type> --audience-scope <scope> \
+  --primary-user '<user>' --primary-goal '<goal>'
+```
+
 Validate and render:
 
 ```bash

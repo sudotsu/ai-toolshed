@@ -2,6 +2,8 @@
 
 Canonical files are `findings.json` and `coverage.json`.
 
+`scripts/bootstrap_teardown.py` creates a minimal provisional scaffold with an open limitation. Its valid JSON is a starting point, not an audit result. Fill actual evidence, journeys, assessments, findings and coverage, then validate and render the completed handoff.
+
 ## findings.json
 
 Schema: `ux-ui-teardown-v2`.

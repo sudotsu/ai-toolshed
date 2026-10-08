@@ -80,6 +80,7 @@ Rules:
 - when `changed_targets` is non-empty, `changed_target_actions` must map every changed target exactly once and may not contain extra targets;
 - values must be one of `repository_edit|design_file_edit|cms_edit`;
 - each mapped authority must itself be `authorized`;
+- an authorized action needs a non-empty text scope and evidence of that authorization;
 - an `in_progress|fixed` implementation claim with no concrete changed target still requires at least one authorized edit action unless the finding was `already_resolved` before this revision run;
 - access to a repository/design/CMS does not imply mutation authority.
 
@@ -106,7 +107,7 @@ Rules:
 }
 ```
 
-Allowed evidence levels, weakest to strongest for this contract:
+Allowed evidence types (listed in the order used for the readiness summary, not as substitutes for one another):
 
 ```text
 source_inspection
@@ -127,7 +128,7 @@ Rules:
 - each source acceptance criterion must appear exactly once in `acceptance_results`;
 - a `passed` acceptance result requires evidence refs that resolve to `verification_evidence` rows;
 - fixed requires every applicable criterion `passed|not_applicable`, terminal current-state revalidation, and verification evidence;
-- a fixed visual, interaction, accessibility, or competitive UX/UI finding requires at least one acceptance-linked evidence row at `rendered_experience` or higher;
+- a fixed visual, interaction, accessibility, or competitive UX/UI finding requires at least one acceptance-linked `rendered_experience` or `published_experience` evidence row; behavioral or business evidence alone cannot substitute for inspection of the affected interface;
 - when the source finding's `judgment_basis` is `first_party_measurement`, `user_research`, or `user_sentiment`, fixed requires new acceptance-linked `post_change` evidence at `user_observation`, `first_party_measurement`, or `business_outcome`; pre-change analytics/research remain baseline evidence and cannot prove the revision worked;
 - `source_inspection` can support implementation correctness but does not by itself prove a visual, interaction, or behavioral outcome is fixed;
 - retained strengths stay `preserved`, unless `preservation_status: approved_tradeoff` with explicit `approval: approved`;
@@ -174,7 +175,7 @@ Deployment/publication: `not_performed|performed|blocked|not_applicable`.
 
 Overall: `planned|not_ready|ready|blocked`.
 
-`highest_evidence_level` uses the same evidence ladder documented above.
+`highest_evidence_level` uses the same enumeration documented above as a summary field. Its position in that list does not establish that all other evidence types are present or that a particular criterion was verified.
 
 `readiness.overall: ready` additionally requires:
 

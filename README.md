@@ -20,6 +20,8 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Skill | [ux-ui-teardown](skills/ux-ui-teardown/) | Audit visual craft, real user journeys, contextual engagement, audience fit, and measured competitor calibration without changing the product. |
 | Skill | [ux-ui-revision](skills/ux-ui-revision/) | Revalidate and implement approved UX/UI findings, preserve authentic strengths, resolve context-sensitive decisions, and verify the rendered experience without copying competitors. |
 
+The UX/UI pair is under flagship evaluation. Its package tests pass, but [peer outcome comparison and runtime evidence](docs/ux-ui-top-five-benchmark.md) remain incomplete. Treat market-parity claims as unverified until those gates are met.
+
 The skills include four implemented teardown/revision workflows:
 
 ```text

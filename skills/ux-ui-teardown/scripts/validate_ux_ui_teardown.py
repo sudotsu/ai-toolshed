@@ -69,6 +69,10 @@ def text(value):
     return isinstance(value, str) and bool(value.strip())
 
 
+def enum_value(value, allowed):
+    return isinstance(value, str) and value in allowed
+
+
 def slist(value):
     return [item for item in value if text(item)] if isinstance(value, list) else []
 
@@ -135,14 +139,16 @@ def validate(root: Path):
     for key in required_audit:
         if key not in audit:
             errors.append(f"audit missing {key}")
-    for key in ["project_name", "project_locator", "audited_revision", "project_type", "competitor_benchmark_reason"]:
+    for key in ["project_name", "project_locator", "audited_revision", "project_type", "competitor_benchmark_reason", "audit_start_date", "audit_end_date"]:
         if key in audit and not text(audit.get(key)):
             errors.append(f"audit.{key} must be non-empty text")
-    if audit.get("review_status") not in {"complete", "provisional"}:
+    if "production_locator" in audit and not isinstance(audit.get("production_locator"), str):
+        errors.append("audit.production_locator must be text")
+    if not enum_value(audit.get("review_status"), {"complete", "provisional"}):
         errors.append("audit.review_status invalid")
-    if audit.get("production_revision_status") not in {"verified", "unverified", "not_applicable"}:
+    if not enum_value(audit.get("production_revision_status"), {"verified", "unverified", "not_applicable"}):
         errors.append("audit.production_revision_status invalid")
-    if audit.get("audience_scope") not in AUDIENCE:
+    if not enum_value(audit.get("audience_scope"), AUDIENCE):
         errors.append("audit.audience_scope invalid")
     if not isinstance(audit.get("primary_user_groups"), list) or not slist(audit.get("primary_user_groups")):
         errors.append("audit.primary_user_groups must be non-empty string list")
@@ -169,7 +175,7 @@ def validate(root: Path):
     competitors = ids(findings_doc.get("competitor_set"), PATTERNS["competitor"], "competitor_set", errors)
     competitor_comparison_refs = {}
     for cid, row in competitors.items():
-        if row.get("selection_status") not in {"measured", "owner_supplied", "reference_only"}:
+        if not enum_value(row.get("selection_status"), {"measured", "owner_supplied", "reference_only"}):
             errors.append(f"{cid}.selection_status invalid")
         for key in ["name", "locator", "relevance_reason"]:
             if not text(row.get(key)):
@@ -196,11 +202,11 @@ def validate(root: Path):
     journey_declared_modes = {}
     journey_declared_states = {}
     for jid, row in journeys.items():
-        if row.get("criticality") not in CRITICALITY:
+        if not enum_value(row.get("criticality"), CRITICALITY):
             errors.append(f"{jid}.criticality invalid")
-        if row.get("effort_budget") not in EFFORT:
+        if not enum_value(row.get("effort_budget"), EFFORT):
             errors.append(f"{jid}.effort_budget invalid")
-        if row.get("status") not in JOURNEY_STATUS:
+        if not enum_value(row.get("status"), JOURNEY_STATUS):
             errors.append(f"{jid}.status invalid")
         for key in ["title", "user_group", "trigger", "intended_outcome", "engagement_intent", "expected_payoff", "context_notes"]:
             if not text(row.get(key)):
@@ -227,13 +233,21 @@ def validate(root: Path):
             axis = None
         if axis is not None:
             axes_seen.add(axis)
-        if row.get("confidence") not in CONFIDENCE:
+        if not enum_value(row.get("confidence"), CONFIDENCE):
             errors.append(f"{xid}.confidence invalid")
         for key in ["surface_target", "verdict", "observation", "reasoning", "desired_direction"]:
             if not text(row.get(key)):
                 errors.append(f"{xid}.{key} must be non-empty text")
         jids = refs(row.get("journey_ids"), set(journeys), f"{xid}.journey_ids", errors)
         evidence_refs = refs(row.get("evidence_ids"), set(evidence), f"{xid}.evidence_ids", errors, nonempty=True)
+        if audit.get("review_status") == "complete" and axis in {
+            "visual_craft", "color_system", "typography", "composition",
+            "visual_coherence", "responsive_consistency",
+        } and not any(
+            evidence.get(ref, {}).get("evidence_class") == "rendered_observation"
+            for ref in evidence_refs
+        ):
+            errors.append(f"{xid} visual conclusion requires linked rendered_observation evidence")
         cids = refs(row.get("competitor_ids"), set(competitors), f"{xid}.competitor_ids", errors)
         if cids:
             comparative_assessments.append((set(cids), set(evidence_refs), xid))
@@ -243,23 +257,23 @@ def validate(root: Path):
 
     findings = ids(findings_doc.get("findings"), PATTERNS["finding"], "findings", errors)
     for fid, row in findings.items():
-        if row.get("kind") not in KINDS:
+        if not enum_value(row.get("kind"), KINDS):
             errors.append(f"{fid}.kind invalid")
-        if row.get("status") not in FINDING_STATUS:
+        if not enum_value(row.get("status"), FINDING_STATUS):
             errors.append(f"{fid}.status invalid")
-        if row.get("severity") not in SEVERITY:
+        if not enum_value(row.get("severity"), SEVERITY):
             errors.append(f"{fid}.severity invalid")
-        if row.get("confidence") not in CONFIDENCE:
+        if not enum_value(row.get("confidence"), CONFIDENCE):
             errors.append(f"{fid}.confidence invalid")
-        if row.get("verification_state") not in VERIFICATION:
+        if not enum_value(row.get("verification_state"), VERIFICATION):
             errors.append(f"{fid}.verification_state invalid")
-        if row.get("judgment_basis") not in BASIS:
+        if not enum_value(row.get("judgment_basis"), BASIS):
             errors.append(f"{fid}.judgment_basis invalid")
         domains = slist(row.get("domains"))
         raw_domains = row.get("domains")
         if not domains or not isinstance(raw_domains, list) or len(domains) != len(raw_domains) or any(domain not in DOMAINS for domain in domains):
             errors.append(f"{fid}.domains invalid")
-        if row.get("judgment_basis") == "aesthetic_preference" and row.get("severity") not in {"low", "informational"}:
+        if row.get("judgment_basis") == "aesthetic_preference" and not enum_value(row.get("severity"), {"low", "informational"}):
             errors.append(f"{fid} aesthetic_preference cannot exceed low severity")
         if row.get("judgment_basis") == "visual_craft" and row.get("severity") == "critical":
             errors.append(f"{fid} visual_craft alone cannot be critical")
@@ -277,13 +291,23 @@ def validate(root: Path):
             if not isinstance(value, list) or not values or len(values) != len(value):
                 errors.append(f"{fid}.{key} must be non-empty string list")
         refs(row.get("journey_ids"), set(journeys), f"{fid}.journey_ids", errors)
-        refs(row.get("evidence_ids"), set(evidence), f"{fid}.evidence_ids", errors, nonempty=True)
+        finding_evidence = refs(row.get("evidence_ids"), set(evidence), f"{fid}.evidence_ids", errors, nonempty=True)
+        if audit.get("review_status") == "complete" and (
+            row.get("judgment_basis") == "visual_craft"
+            or any(domain.startswith("ui.") for domain in domains)
+        ) and not any(
+            evidence.get(ref, {}).get("evidence_class") == "rendered_observation"
+            for ref in finding_evidence
+        ):
+            errors.append(f"{fid} visual finding requires linked rendered_observation evidence")
         for key in ["standard_refs", "implementation_targets", "preservation_constraints", "dependencies", "conflicts", "non_goals"]:
             value = row.get(key)
             if not isinstance(value, list) or len(slist(value)) != len(value if isinstance(value, list) else []):
                 errors.append(f"{fid}.{key} must be string list")
-        if row.get("kind") != "strength" and row.get("status") not in {"not_applicable", "resolved"} and not text(row.get("recommendation")):
+        if row.get("kind") != "strength" and not enum_value(row.get("status"), {"not_applicable", "resolved"}) and not text(row.get("recommendation")):
             errors.append(f"{fid}.recommendation required")
+        elif "recommendation" in row and not isinstance(row.get("recommendation"), str):
+            errors.append(f"{fid}.recommendation must be text")
         for dependency in slist(row.get("dependencies")):
             if dependency not in findings:
                 errors.append(f"{fid} unknown dependency {dependency}")
@@ -293,7 +317,7 @@ def validate(root: Path):
             elif fid not in slist(findings[conflict].get("conflicts")):
                 errors.append(f"{fid} conflict with {conflict} not symmetric")
 
-    if coverage.get("review_status") not in {"complete", "provisional"}:
+    if not enum_value(coverage.get("review_status"), {"complete", "provisional"}):
         errors.append("coverage.review_status invalid")
     if coverage.get("review_status") != audit.get("review_status"):
         errors.append("review_status mismatch")
@@ -313,10 +337,12 @@ def validate(root: Path):
         categories.append(category)
         if category not in ACCESS:
             errors.append(f"access[{index}].category invalid")
-        if row.get("status") not in {"available", "partial", "blocked", "not_applicable"}:
+        if not enum_value(row.get("status"), {"available", "partial", "blocked", "not_applicable"}):
             errors.append(f"access[{index}].status invalid")
         if not isinstance(row.get("material_to_complete"), bool):
             errors.append(f"access[{index}].material_to_complete must be bool")
+        if not text(row.get("next_step")):
+            errors.append(f"access[{index}].next_step required")
         refs(row.get("evidence_ids"), set(evidence), f"access[{index}].evidence_ids", errors)
     if set(categories) != ACCESS or len(categories) != len(ACCESS):
         errors.append("coverage.access must contain each category exactly once")
@@ -338,9 +364,9 @@ def validate(root: Path):
         pass_map[pid] = row
         if pid not in PASSES:
             errors.append(f"passes[{index}].id invalid")
-        if row.get("materiality") not in {"defining", "high", "supporting"}:
+        if not enum_value(row.get("materiality"), {"defining", "high", "supporting"}):
             errors.append(f"{pid}.materiality invalid")
-        if row.get("status") not in PASS_STATUS:
+        if not enum_value(row.get("status"), PASS_STATUS):
             errors.append(f"{pid}.status invalid")
         refs(row.get("finding_ids"), set(findings), f"{pid}.finding_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"{pid}.evidence_ids", errors)
@@ -350,13 +376,15 @@ def validate(root: Path):
     viewports = ids(coverage.get("viewports"), PATTERNS["viewport"], "viewports", errors)
     observed_views = {jid: set() for jid in journeys}
     for vid, row in viewports.items():
-        if row.get("class") not in VIEW_CLASSES:
+        if not text(row.get("label")):
+            errors.append(f"{vid}.label required")
+        if not enum_value(row.get("class"), VIEW_CLASSES):
             errors.append(f"{vid}.class invalid")
-        if row.get("status") not in COVERAGE_STATUS:
+        if not enum_value(row.get("status"), COVERAGE_STATUS):
             errors.append(f"{vid}.status invalid")
         jids = refs(row.get("journey_ids"), set(journeys), f"{vid}.journey_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"{vid}.evidence_ids", errors, nonempty=row.get("status") == "observed")
-        if row.get("status") == "observed":
+        if row.get("status") == "observed" and enum_value(row.get("class"), VIEW_CLASSES):
             for linked_jid in jids:
                 observed_views.setdefault(linked_jid, set()).add(row.get("class"))
 
@@ -380,7 +408,7 @@ def validate(root: Path):
             errors.append(f"duplicate input mode {mode}")
         seen_modes.add(mode)
         input_map[mode] = row
-        if row.get("status") not in COVERAGE_STATUS:
+        if not enum_value(row.get("status"), COVERAGE_STATUS):
             errors.append(f"input_modes[{index}].status invalid")
         jids = refs(row.get("journey_ids"), set(journeys), f"input_modes[{index}].journey_ids", errors)
         refs(row.get("evidence_ids"), set(evidence), f"input_modes[{index}].evidence_ids", errors, nonempty=row.get("status") == "observed")
@@ -390,12 +418,15 @@ def validate(root: Path):
 
     states = ids(coverage.get("state_coverage"), PATTERNS["state"], "state_coverage", errors)
     for sid, row in states.items():
-        if row.get("state") not in STATE_CLASSES:
+        for key in ("label", "step", "surface_target", "trigger"):
+            if not text(row.get(key)):
+                errors.append(f"{sid}.{key} required")
+        if not enum_value(row.get("state"), STATE_CLASSES):
             errors.append(f"{sid}.state invalid")
         jid = row.get("journey_id")
         if not isinstance(jid, str) or jid not in journeys:
             errors.append(f"{sid}.journey_id invalid")
-        if row.get("status") not in COVERAGE_STATUS:
+        if not enum_value(row.get("status"), COVERAGE_STATUS):
             errors.append(f"{sid}.status invalid")
         refs(row.get("viewport_ids"), set(viewports), f"{sid}.viewport_ids", errors, nonempty=row.get("status") == "observed")
         refs(row.get("evidence_ids"), set(evidence), f"{sid}.evidence_ids", errors, nonempty=row.get("status") == "observed")
@@ -428,25 +459,25 @@ def validate(root: Path):
 
     limitations = ids(coverage.get("material_limitations"), PATTERNS["limit"], "material_limitations", errors)
     for lid, row in limitations.items():
-        if row.get("status") not in {"open", "resolved"}:
+        if not enum_value(row.get("status"), {"open", "resolved"}):
             errors.append(f"{lid}.status invalid")
         if not text(row.get("description")) or not text(row.get("completion_requirement")):
             errors.append(f"{lid} description/completion_requirement required")
 
     complete = audit.get("review_status") == "complete"
-    interactive = audit.get("project_type") in {"website", "web_app", "saas", "ecommerce", "local_service", "agency_professional_service"}
+    interactive = enum_value(audit.get("project_type"), {"website", "web_app", "saas", "ecommerce", "local_service", "agency_professional_service"})
     benchmark_required = audit.get("competitor_benchmark_required") is True
     if complete:
-        if any(obj(row) and row.get("material_to_complete") is True and row.get("status") in {"partial", "blocked"} for row in access_rows):
+        if any(obj(row) and row.get("material_to_complete") is True and enum_value(row.get("status"), {"partial", "blocked"}) for row in access_rows):
             errors.append("complete review has material access partial/blocked")
         if any(row.get("status") == "open" for row in limitations.values()):
             errors.append("complete review cannot have open material limitations")
         for pid in ["ui_craft", "ux_experience"]:
-            if pass_map.get(pid, {}).get("status") not in {"passed", "failed"}:
+            if not enum_value(pass_map.get(pid, {}).get("status"), {"passed", "failed"}):
                 errors.append(f"complete review requires completed {pid} pass")
 
         if benchmark_required:
-            if pass_map.get("competitive_calibration", {}).get("status") not in {"passed", "failed"}:
+            if not enum_value(pass_map.get("competitive_calibration", {}).get("status"), {"passed", "failed"}):
                 errors.append("complete review requires competitive calibration pass")
             measured_ids = [cid for cid, row in competitors.items() if row.get("selection_status") == "measured"]
             if len(measured_ids) < 2:
@@ -474,9 +505,9 @@ def validate(root: Path):
             if axis not in axes_seen:
                 errors.append(f"complete review missing {axis} assessment")
 
-        material_journeys = [(jid, row) for jid, row in journeys.items() if row.get("criticality") in {"primary", "high_risk"}]
+        material_journeys = [(jid, row) for jid, row in journeys.items() if enum_value(row.get("criticality"), {"primary", "high_risk"})]
         for jid, journey in material_journeys:
-            if journey.get("status") in {"partial", "blocked", "not_tested"}:
+            if enum_value(journey.get("status"), {"partial", "blocked", "not_tested"}):
                 errors.append(f"complete review has incomplete material journey {jid}")
             if not experiences_by_journey.get(jid):
                 errors.append(f"complete material journey {jid} has no experience assessment")
@@ -494,7 +525,7 @@ def validate(root: Path):
             errors.append("complete review requires rendered observation evidence")
 
     validator = coverage.get("validator")
-    if not obj(validator) or validator.get("status") not in {"passed", "pending"} or not text(validator.get("name")) or not text(validator.get("validated_at")):
+    if not obj(validator) or not enum_value(validator.get("status"), {"passed", "pending"}) or not text(validator.get("name")) or not text(validator.get("validated_at")):
         errors.append("coverage.validator invalid")
     return errors
 

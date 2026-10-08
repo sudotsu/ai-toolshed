@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import json
 import shutil
 import sys
@@ -70,6 +71,47 @@ class Tests(unittest.TestCase):
             td, rv = pair(Path(temp))
             self.assertEqual(validate(td, rv), [])
 
+    def test_revision_string_fields_reject_unhashable_values(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            path = rv / "revision.json"
+            original = read_json(path)
+
+            def string_paths(node, parts=()):
+                if isinstance(node, dict):
+                    for key, value in node.items():
+                        if isinstance(value, str):
+                            yield parts + (key,)
+                        elif isinstance(value, (dict, list)):
+                            yield from string_paths(value, parts + (key,))
+                elif isinstance(node, list):
+                    for index, value in enumerate(node):
+                        yield from string_paths(value, parts + (index,))
+
+            for field_path in string_paths(original):
+                mutated = copy.deepcopy(original)
+                container = mutated
+                for part in field_path[:-1]:
+                    container = container[part]
+                container[field_path[-1]] = []
+                write_json(path, mutated)
+                with self.subTest(field=field_path):
+                    self.assertTrue(validate(td, rv, run_upstream=False))
+            write_json(path, original)
+
+    def test_authorized_action_requires_recorded_scope_and_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            data = read_json(rv / "revision.json")
+            data["mode"] = "implementation"
+            action = next(item for item in data["authority"] if item["action"] == "repository_edit")
+            action["status"] = "authorized"
+            write_json(rv / "revision.json", data)
+            self.assertTrue(any(
+                "authorized action requires non-empty text scope and evidence" in error
+                for error in validate(td, rv)
+            ))
+
     def test_invalid_upstream_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             td, rv = pair(Path(temp))
@@ -116,7 +158,33 @@ class Tests(unittest.TestCase):
             data["mode"] = "implementation"
             authorize_repository_edit(data)
             write_json(rv / "revision.json", data)
-            self.assertTrue(any("rendered_experience-or-higher" in error for error in validate(td, rv)))
+            self.assertTrue(any("rendered_experience or published_experience" in error for error in validate(td, rv)))
+
+    def test_business_outcome_alone_does_not_verify_visual_fix(self):
+        with tempfile.TemporaryDirectory() as temp:
+            td, rv = pair(Path(temp))
+            make_source_gap(td, rv)
+            source = read_json(td / "findings.json")
+            source["findings"][0]["domains"] = ["ui.visual-craft"]
+            write_json(td / "findings.json", source)
+            data = read_json(rv / "revision.json")
+            import hashlib
+            data["source"]["teardown_findings_digest"] = hashlib.sha256((td / "findings.json").read_bytes()).hexdigest()
+            data["mode"] = "implementation"
+            authorize_repository_edit(data)
+            row = data["findings"][0]
+            row.update({
+                "revalidation": "confirmed", "current_evidence": ["current"],
+                "implementation_status": "fixed", "approval": "approved",
+                "preservation_status": "not_applicable",
+                "verification_evidence": [{"ref": "revenue", "level": "business_outcome"}],
+            })
+            row["acceptance_results"][0].update({"status": "passed", "evidence": ["revenue"]})
+            write_json(rv / "revision.json", data)
+            self.assertTrue(any(
+                "rendered_experience or published_experience" in error
+                for error in validate(td, rv)
+            ))
 
     def test_fixed_experiential_finding_accepts_linked_rendered_evidence(self):
         with tempfile.TemporaryDirectory() as temp:

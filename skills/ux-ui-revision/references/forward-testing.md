@@ -25,11 +25,11 @@ A few successful real-project revisions and green validators prove workflow viab
 
 Do not claim market-leading revision quality from CI, self-review, or a small hand-selected set of projects.
 
-## Required top-five reference benchmark
+## Peer comparison before flagship release
 
-Before treating the revision skill as flagship-finished, review and apply [`top-five-benchmark.md`](top-five-benchmark.md). The same five and applicable capability bar govern teardown and revision so the pair cannot satisfy the repository quality standard by benchmarking only the audit half.
+Before treating the revision skill as flagship-finished, review and apply [`top-five-benchmark.md`](top-five-benchmark.md). The same provisional peer cohort governs both halves, but teardown and revision outcomes must be evaluated separately. A named cohort is not a top-five result.
 
-If the benchmark becomes stale or the domain changes materially, refresh the five from current attributable multi-signal evidence before relying on it. Do not silently substitute model memory or a convenient comparison set.
+Refresh the peer cohort from current attributable evidence when the domain changes or the comparison becomes stale. Do not silently substitute model memory or a convenient comparison set.
 
 ## Flagship implementation benchmark
 

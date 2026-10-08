@@ -135,15 +135,26 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
     if not source_meta:
         errors.append("source must be object")
     else:
+        if source_meta.get("teardown_schema_version") != src.get("schema_version"):
+            errors.append("source teardown schema mismatch")
         if source_meta.get("teardown_findings_digest") != digest(td / "findings.json"):
             errors.append("source teardown digest mismatch")
         audit = src.get("audit") if obj(src.get("audit")) else {}
         if source_meta.get("teardown_revision") != audit.get("audited_revision"):
             errors.append("source teardown revision mismatch")
+        if source_meta.get("teardown_review_status") != audit.get("review_status"):
+            errors.append("source teardown review status mismatch")
 
     baseline = rv.get("baseline") if obj(rv.get("baseline")) else {}
     if "baseline" in rv and not baseline:
         errors.append("baseline must be object")
+    for key in ("current_revision", "working_tree_state", "production_revision_status", "captured_at"):
+        if not text(baseline.get(key)):
+            errors.append(f"baseline.{key} requires text")
+    if not isinstance(baseline.get("material_drift"), bool):
+        errors.append("baseline.material_drift must be bool")
+    if not isinstance(baseline.get("drift_notes"), list) or len(string_list(baseline.get("drift_notes"))) != len(baseline.get("drift_notes", []) if isinstance(baseline.get("drift_notes"), list) else []):
+        errors.append("baseline.drift_notes must be string list")
 
     authority = rv.get("authority") if isinstance(rv.get("authority"), list) else []
     if not isinstance(rv.get("authority"), list):
@@ -166,6 +177,13 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
             errors.append(f"authority[{index}].status invalid")
         if not isinstance(row.get("scope"), list) or not isinstance(row.get("evidence"), list):
             errors.append(f"authority[{index}] scope/evidence must be lists")
+        elif row.get("status") == "authorized" and (
+            not string_list(row.get("scope"))
+            or len(string_list(row.get("scope"))) != len(row["scope"])
+            or not string_list(row.get("evidence"))
+            or len(string_list(row.get("evidence"))) != len(row["evidence"])
+        ):
+            errors.append(f"authority[{index}] authorized action requires non-empty text scope and evidence")
     if set(actions) != AUTH or len(actions) != len(AUTH):
         errors.append("authority must contain each action exactly once")
     if rv.get("mode") == "planning-only" and any(
@@ -216,6 +234,8 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
             errors.append(f"{fid}.implementation_status invalid")
         if not enum_value(row.get("preservation_status"), PRES):
             errors.append(f"{fid}.preservation_status invalid")
+        if not isinstance(row.get("notes"), str):
+            errors.append(f"{fid}.notes must be text")
 
         for key in ["current_evidence", "changed_targets", "acceptance_results"]:
             if not isinstance(row.get(key), list):
@@ -310,16 +330,13 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
                 if obj(result) and result.get("status") == "passed"
                 for evidence_ref in string_list(result.get("evidence"))
             }
-            linked_levels = [
-                LEVEL_RANK.get(verification[ref].get("level"), -1)
-                for ref in linked_refs
-                if ref in verification and isinstance(verification[ref].get("level"), str)
-            ]
             if experiential and not any(
-                level >= LEVEL_RANK["rendered_experience"] for level in linked_levels
+                ref in verification
+                and verification[ref].get("level") in {"rendered_experience", "published_experience"}
+                for ref in linked_refs
             ):
                 errors.append(
-                    f"{fid} fixed experiential finding requires rendered_experience-or-higher acceptance evidence"
+                    f"{fid} fixed experiential finding requires acceptance-linked rendered_experience or published_experience evidence"
                 )
 
             if source.get("judgment_basis") in BEHAVIORAL_BASES:
@@ -413,6 +430,8 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
     if not convergence:
         errors.append("convergence must be object")
     else:
+        if not text(convergence.get("reviewed_revision")):
+            errors.append("convergence.reviewed_revision requires text")
         if not enum_value(convergence.get("status"), {"not_started", "in_progress", "converged", "blocked"}):
             errors.append("convergence.status invalid")
         if convergence.get("status") == "converged":
@@ -445,6 +464,11 @@ def validate(td: Path, rvdir: Path, *, run_upstream=True):
     if not readiness:
         errors.append("readiness must be object")
     else:
+        for key in ("user_outcome", "business_outcome"):
+            if not text(readiness.get(key)):
+                errors.append(f"readiness.{key} requires text")
+        if not isinstance(readiness.get("limitations"), list) or len(string_list(readiness.get("limitations"))) != len(readiness.get("limitations", []) if isinstance(readiness.get("limitations"), list) else []):
+            errors.append("readiness.limitations must be string list")
         if not enum_value(readiness.get("highest_evidence_level"), LEVEL_RANK):
             errors.append("readiness.highest_evidence_level invalid")
         if not enum_value(readiness.get("implementation"), {"not_started", "in_progress", "ready", "blocked"}):

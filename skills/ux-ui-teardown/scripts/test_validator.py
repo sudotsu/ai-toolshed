@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import copy
 import tempfile
 import unittest
+import subprocess
+import sys
 from pathlib import Path
 
 import render_handoff
@@ -95,6 +98,24 @@ def write_fixture(root: Path, complete=True):
 
 
 class Tests(unittest.TestCase):
+    def test_bootstrap_creates_valid_provisional_handoff(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "handoff"
+            command = [
+                sys.executable, str(Path(__file__).parent / "bootstrap_teardown.py"), str(output),
+                "--project-name", "Test app", "--project-locator", "repo",
+                "--audited-revision", "abc", "--project-type", "web_app",
+                "--audience-scope", "internal", "--primary-user", "operator",
+                "--primary-goal", "complete task",
+            ]
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(validate(output), [])
+            self.assertEqual(read_json(output / "findings.json")["audit"]["review_status"], "provisional")
+            self.assertEqual(read_json(output / "coverage.json")["material_limitations"][0]["status"], "open")
+            repeated = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertNotEqual(repeated.returncode, 0)
+
     def pair(self):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
@@ -105,6 +126,52 @@ class Tests(unittest.TestCase):
         temp, root = self.pair()
         self.addCleanup(temp.cleanup)
         self.assertEqual(validate(root), [])
+
+    def test_complete_visual_conclusions_need_their_own_rendered_evidence(self):
+        temp, root = self.pair()
+        self.addCleanup(temp.cleanup)
+        data = read_json(root / "findings.json")
+        data["evidence_sources"].append({
+            "id": "EVID-005", "evidence_class": "source_inspection", "title": "source",
+            "locator": "repo", "accessed_at": "2026-10-08", "summary": "CSS source only",
+            "limitations": [],
+        })
+        data["experience_assessments"][0]["evidence_ids"] = ["EVID-005"]
+        data["findings"][0]["domains"] = ["ui.visual-craft"]
+        data["findings"][0]["evidence_ids"] = ["EVID-005"]
+        write_json(root / "findings.json", data)
+        errors = validate(root)
+        self.assertTrue(any("EXP-001 visual conclusion" in error for error in errors))
+        self.assertTrue(any("UXUI-001 visual finding" in error for error in errors))
+
+    def test_string_fields_reject_unhashable_values_without_crashing(self):
+        temp, root = self.pair()
+        self.addCleanup(temp.cleanup)
+
+        def string_paths(node, path=()):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    if isinstance(value, str):
+                        yield path + (key,)
+                    elif isinstance(value, (dict, list)):
+                        yield from string_paths(value, path + (key,))
+            elif isinstance(node, list):
+                for index, value in enumerate(node):
+                    yield from string_paths(value, path + (index,))
+
+        for name in ("findings.json", "coverage.json"):
+            path = root / name
+            original = read_json(path)
+            for field_path in string_paths(original):
+                mutated = copy.deepcopy(original)
+                container = mutated
+                for part in field_path[:-1]:
+                    container = container[part]
+                container[field_path[-1]] = []
+                write_json(path, mutated)
+                with self.subTest(file=name, field=field_path):
+                    self.assertTrue(validate(root))
+            write_json(path, original)
 
     def test_complete_requires_measured_competitors(self):
         temp, root = self.pair()
