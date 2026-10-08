@@ -46,6 +46,8 @@ For each case, establish reference findings and desired outcomes **before** insp
 
 Run the teardown and revision roles separately. For revision, provide the same validated starting findings and authorization to every candidate capable of implementation. Reinspect the resulting UI at the relevant viewports and states. A passed JSON validator is not proof that an intervention worked.
 
+Use independent testbeds as additional evidence, with the benchmark labels hidden from every candidate. [UXBench at `15f87a9`](https://github.com/Jackwwj619/UXBench/tree/15f87a975cd5670533d8892b1395c9ba5a556eb5) has 41 runnable fixtures across ten interface families and a fixed downstream repair-and-score method for critique actionability. Adapt the Toolshed and peer outputs to its report contract before comparing them; do not treat its published model leaderboard as a score for these skills. [UIJudgeBench at `022f3b4`](https://github.com/gojiplus/uijudge-bench/tree/022f3b4e950dcbdce1ddd09d13cb4d1aa40c3f32) has auditable labels for accessibility, layout, localization and computed-style judgments. Its design-preference pilot pairs are not yet scored ground truth, so use it for defect detection rather than visual-taste superiority. Pin benchmark and data versions and preserve the prediction files. Neither testbed alone covers the full teardown-to-revision job.
+
 ## Current evidence and release decision
 
 The PR has package/unit tests and two described forward smoke tests on OmahaTreeCare and TipJar. The PR does not contain preserved, independently scored peer runs or a blinded reference corpus. Thus it has **workflow viability evidence**, not demonstrated peer parity. The five projects above have not yet been run against the same cases in this repository.
