@@ -14,6 +14,7 @@
     "references/competitive-benchmarking.md",
     "references/report-contract.md",
     "references/forward-testing.md",
+    "references/top-five-benchmark.md",
     "scripts/render_handoff.py",
     "scripts/test_malformed_input.py",
     "scripts/test_validator.py",
