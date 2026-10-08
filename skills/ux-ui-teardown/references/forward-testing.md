@@ -32,6 +32,12 @@ The two contrasting real-project runs above are a minimum forward smoke test. Th
 
 Do not claim top-tier, top-five, expert-equivalent, or best-in-market quality from green CI, schema validation, self-review, or a small hand-selected set of projects.
 
+## Required top-five reference benchmark
+
+Before treating the skill as flagship-finished, review and apply [`../../../docs/ux-ui-top-five-benchmark.md`](../../../docs/ux-ui-top-five-benchmark.md). That artifact records the current evidence-selected five, the capabilities this portable agent workflow must match or beat, the explicit use-case exception for SaaS/data-collection infrastructure, and the evidence boundary for any market-parity or superiority claim.
+
+If the benchmark becomes stale or the domain changes materially, refresh the five from current attributable multi-signal evidence before relying on it. Do not silently substitute model memory or a convenient competitor set.
+
 ## Market-quality / flagship benchmark
 
 Before making a strong market-parity or superiority claim, run a diversified benchmark whose reference findings are established independently of the skill under test.
