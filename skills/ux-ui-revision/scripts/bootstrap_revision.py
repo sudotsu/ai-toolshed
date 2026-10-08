@@ -65,6 +65,7 @@ def main():
                 "implementation_status": "preserved" if is_strength else "planned",
                 "current_evidence": [],
                 "changed_targets": [],
+                "changed_target_actions": {},
                 "acceptance_results": [
                     {"criterion": criterion, "status": "pending", "evidence": []}
                     for criterion in criteria
@@ -113,7 +114,6 @@ def main():
         print(f"cannot build revision scaffold: {exc}", file=sys.stderr)
         return 1
 
-    # Do not create output paths until the full scaffold has been built successfully.
     output.mkdir(parents=True, exist_ok=True)
     (output / "evidence").mkdir(exist_ok=True)
     (output / "revision.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
