@@ -34,7 +34,7 @@ Do not claim top-tier, top-five, expert-equivalent, or best-in-market quality fr
 
 ## Required top-five reference benchmark
 
-Before treating the skill as flagship-finished, review and apply [`../../../docs/ux-ui-top-five-benchmark.md`](../../../docs/ux-ui-top-five-benchmark.md). That artifact records the current evidence-selected five, the capabilities this portable agent workflow must match or beat, the explicit use-case exception for SaaS/data-collection infrastructure, and the evidence boundary for any market-parity or superiority claim.
+Before treating the skill as flagship-finished, review and apply [`top-five-benchmark.md`](top-five-benchmark.md). That artifact records the current evidence-selected five, the capabilities this portable agent workflow must match or beat, the explicit use-case exception for SaaS/data-collection infrastructure, and the evidence boundary for any market-parity or superiority claim.
 
 If the benchmark becomes stale or the domain changes materially, refresh the five from current attributable multi-signal evidence before relying on it. Do not silently substitute model memory or a convenient competitor set.
 
