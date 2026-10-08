@@ -63,6 +63,8 @@ The documentation guides preserve reusable architecture, configuration, and vali
 
 The canonical skill packages target both Claude Code and Codex. Their local desktop coding surfaces use the same runtime-specific skill sources:
 
+The paths and invocations below are package targets, not proof that the new UX/UI pair has been discovered and exercised on every surface. That pair has a source-only Codex CLI smoke run; installed discovery and real operations on Claude Code, Claude Desktop Code, Codex IDE, and ChatGPT desktop remain unverified.
+
 | Runtime surface | Personal installation root | Explicit invocation |
 | --- | --- | --- |
 | Claude Code and Claude Desktop Code tab | `$HOME/.claude/skills` | `/skill-name` |
@@ -105,7 +107,7 @@ foreach ($skillRoot in $skillRoots) {
 }
 ```
 
-Both runtimes detect skill changes automatically in ordinary local sessions; restart if a new top-level skill directory does not appear. Invoke the installed workflows with the runtime's syntax:
+After installation, restart a runtime if a new top-level skill directory does not appear. The intended invocation syntax is:
 
 ```text
 Claude Code / Claude Desktop Code:
