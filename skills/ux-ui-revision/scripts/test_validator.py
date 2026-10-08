@@ -154,13 +154,14 @@ class Tests(unittest.TestCase):
                 "approval": "approved",
                 "preservation_status": "not_applicable",
                 "changed_targets": ["src/flow.tsx"],
+                "changed_target_actions": {"src/flow.tsx": "repository_edit"},
                 "verification_evidence": [{"ref": "rendered-check", "level": "rendered_experience"}],
             })
             row["acceptance_results"][0].update({"status": "passed", "evidence": ["rendered-check"]})
             data["mode"] = "implementation"
             write_json(rv / "revision.json", data)
             errors = validate(td, rv)
-            self.assertTrue(any("requires authorized repository/design/CMS" in error for error in errors))
+            self.assertTrue(any("requires authorized repository_edit" in error for error in errors))
 
     def test_malformed_enum_values_return_errors_not_traceback(self):
         with tempfile.TemporaryDirectory() as temp:
