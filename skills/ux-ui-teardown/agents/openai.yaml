@@ -1,0 +1,4 @@
+interface:
+  display_name: "UX/UI Teardown"
+  short_description: "Audit visual craft, real UX, and measured competitive quality"
+  default_prompt: "Use $ux-ui-teardown to evaluate this product's visual craft, user experience, journeys, contextual engagement, accessibility/readability, and measured competitive position without changing it."

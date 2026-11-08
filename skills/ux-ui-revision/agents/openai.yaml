@@ -1,0 +1,4 @@
+interface:
+  display_name: "UX/UI Revision"
+  short_description: "Implement and verify approved UX/UI improvements"
+  default_prompt: "Use $ux-ui-revision to revalidate the UX/UI teardown, resolve owner-dependent decisions, implement approved visual and experiential improvements, preserve strengths, and verify the affected journeys."
