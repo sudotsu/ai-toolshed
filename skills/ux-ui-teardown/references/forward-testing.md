@@ -34,7 +34,7 @@ Do not claim top-tier, top-five, expert-equivalent, or best-in-market quality fr
 
 ## Peer comparison before flagship release
 
-Before treating the skill as flagship-finished, review and apply [`top-five-benchmark.md`](top-five-benchmark.md). It records a provisional cohort of five peer agent-skill projects and the evaluation needed to establish actual quality. The cohort list is not a top-five result.
+This skill pair is catalogued and installable now, but the required top-five peer benchmark has not been run. [`top-five-benchmark.md`](top-five-benchmark.md) records a provisional cohort of five peer agent-skill projects and the evaluation still needed to establish actual quality; the cohort list is not a top-five result. Until that benchmark is complete, treat this skill pair as **experimental / prototype** per [AGENTS.md's quality bar](../../../AGENTS.md#quality-bar) — do not present it as flagship, finished, or at peer/market parity.
 
 Refresh the peer cohort from current attributable evidence when the domain changes or the comparison becomes stale. Do not silently substitute model memory or a convenient competitor set.
 

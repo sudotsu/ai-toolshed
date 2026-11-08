@@ -20,7 +20,7 @@ This monorepo collects skills, plugins, and standalone tools that make collabora
 | Skill | [ux-ui-teardown](skills/ux-ui-teardown/) | Audit visual craft, real user journeys, contextual engagement, audience fit, and measured competitor calibration without changing the product. |
 | Skill | [ux-ui-revision](skills/ux-ui-revision/) | Revalidate and implement approved UX/UI findings, preserve authentic strengths, resolve context-sensitive decisions, and verify the rendered experience without copying competitors. |
 
-The UX/UI pair is under flagship evaluation. Its package tests pass, but [peer outcome comparison and runtime evidence](docs/ux-ui-top-five-benchmark.md) remain incomplete. Treat market-parity claims as unverified until those gates are met.
+The UX/UI pair is **experimental / prototype** (see [AGENTS.md's quality bar](AGENTS.md#quality-bar)): its package tests pass, but [peer outcome comparison and runtime evidence](docs/ux-ui-top-five-benchmark.md) remain incomplete. Treat market-parity claims as unverified until those gates are met.
 
 The skills include four implemented teardown/revision workflows:
 
@@ -107,7 +107,7 @@ foreach ($skillRoot in $skillRoots) {
 }
 ```
 
-After installation, restart a runtime if a new top-level skill directory does not appear. The intended invocation syntax is:
+After installation, restart a runtime if a new top-level skill directory does not appear. The intended invocation syntax for the four verified teardown/revision pairs is:
 
 ```text
 Claude Code / Claude Desktop Code:
@@ -117,8 +117,6 @@ Claude Code / Claude Desktop Code:
 /seo-revision implement the approved SEO teardown findings.
 /brand-teardown audit this project's brand system without changing it.
 /brand-revision implement the approved brand teardown findings.
-/ux-ui-teardown audit this product's UX/UI without changing it.
-/ux-ui-revision implement the approved UX/UI teardown findings.
 
 Codex CLI / IDE extension:
 Use $project-teardown to comprehensively evaluate this project.
@@ -127,8 +125,6 @@ Use $seo-teardown to investigate this site's organic-search opportunity.
 Use $seo-revision to implement the approved SEO teardown findings.
 Use $brand-teardown to audit this project's brand system without changing it.
 Use $brand-revision to implement the approved brand teardown findings.
-Use $ux-ui-teardown to audit this product's UX/UI without changing it.
-Use $ux-ui-revision to implement the approved UX/UI teardown findings.
 
 ChatGPT desktop app:
 @project-teardown comprehensively evaluate this project.
@@ -137,6 +133,20 @@ ChatGPT desktop app:
 @seo-revision implement the approved SEO teardown findings.
 @brand-teardown audit this project's brand system without changing it.
 @brand-revision implement the approved brand teardown findings.
+```
+
+The `ux-ui-teardown` / `ux-ui-revision` pair follows the same invocation pattern, but — as noted above — it has only been exercised as a source-only Codex CLI smoke run. Installed discovery and real invocation on Claude Code, Claude Desktop Code, Codex IDE, and ChatGPT desktop remain unverified; treat the commands below as untested syntax, not confirmed working instructions:
+
+```text
+Claude Code / Claude Desktop Code:
+/ux-ui-teardown audit this product's UX/UI without changing it.
+/ux-ui-revision implement the approved UX/UI teardown findings.
+
+Codex CLI / IDE extension:
+Use $ux-ui-teardown to audit this product's UX/UI without changing it.
+Use $ux-ui-revision to implement the approved UX/UI teardown findings.
+
+ChatGPT desktop app:
 @ux-ui-teardown audit this product's UX/UI without changing it.
 @ux-ui-revision implement the approved UX/UI teardown findings.
 ```
